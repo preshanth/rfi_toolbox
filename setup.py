@@ -9,7 +9,7 @@ setup(
         'numpy',
         'matplotlib',
         'tqdm',
-        'torch',
+        'torch>=1.9.0',  # No platform-specific condition since it's not Windows
         'bokeh'
     ],
     entry_points={

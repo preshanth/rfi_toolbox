@@ -19,22 +19,11 @@ class RFIMaskDataset(Dataset):
 
     def __getitem__(self, idx):
         sample_dir = self.sample_dirs[idx]
-        input_stack = []
-        for pol in ['RR', 'RL', 'LR', 'LL']:
-            arr = np.load(os.path.join(sample_dir, f'{pol}.npy'))
-            amp = np.abs(arr)
-            amp = (amp - np.mean(amp)) / (np.std(amp) + 1e-6)
-            input_stack.append(amp)
-
-        input_tensor = np.stack(input_stack, axis=0)  # shape (4, H, W)
-        input_tensor = torch.tensor(input_tensor, dtype=torch.float32)
-
+        input_path = os.path.join(sample_dir, 'input.npy')
         mask_path = os.path.join(sample_dir, 'rfi_mask.npy')
-        if os.path.exists(mask_path):
-            mask = np.load(mask_path).astype(np.float32)
-            mask = torch.tensor(mask, dtype=torch.float32).unsqueeze(0)  # shape (1, H, W)
-        else:
-            mask = torch.zeros((1, args.time_bins, args.freq_bins), dtype=torch.float32) # Or handle as needed
+
+        input_tensor = torch.tensor(np.load(input_path), dtype=torch.float32)
+        mask = torch.tensor(np.load(mask_path), dtype=torch.float32).unsqueeze(0)
 
         if self.transform:
             input_tensor, mask = self.transform(input_tensor, mask)
@@ -42,7 +31,8 @@ class RFIMaskDataset(Dataset):
         return input_tensor, mask
 
 def save_example_pair_npy(tf_plane, mask, index, out_dir, generate_mask=True):
-    os.makedirs(out_dir, exist_ok=True)
+    sample_dir = os.path.join(out_dir, f"{index:04d}")
+    os.makedirs(sample_dir, exist_ok=True)
     input_data = np.stack([
         tf_plane['RR'].real, tf_plane['RR'].imag,
         tf_plane['RL'].real, tf_plane['RL'].imag,
@@ -50,11 +40,11 @@ def save_example_pair_npy(tf_plane, mask, index, out_dir, generate_mask=True):
         tf_plane['LL'].real, tf_plane['LL'].imag
     ], axis=0)  # shape: (8, time_bins, freq_bins)
 
-    input_path = os.path.join(out_dir, f"{index:04d}_input.npy")
+    input_path = os.path.join(sample_dir, f"input.npy") # Changed filename
     np.save(input_path, input_data)
 
     if generate_mask:
-        mask_path = os.path.join(out_dir, f"{index:04d}_mask.npy")
+        mask_path = os.path.join(sample_dir, f"rfi_mask.npy")
         np.save(mask_path, mask)
 
 def main():
@@ -70,7 +60,7 @@ def main():
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
-    simulator = RFISimulator(time_bins=args.time_bins, freq_bins=args.freq_bins)
+    simulator = RFISimulator(time_bins=args.time_bins, freq_bins=args.frequency_bins)
 
     # Train samples
     train_dir = os.path.join(args.output_dir, "train")
