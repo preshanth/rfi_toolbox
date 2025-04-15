@@ -1,0 +1,26 @@
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.egg
+*.egg-info
+dist/
+build/
+venv/
+env/
+
+# Emacs
+*~
+\#*#
+.\#*
+auto-save-list
+eshell/history
+eshell/lastdir
+recentf
+tramp
+.\#*
+
+# Other
+.DS_Store
+.vscode/
