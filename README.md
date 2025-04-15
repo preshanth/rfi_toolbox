@@ -16,7 +16,7 @@ or for development purposes:
 pip install -e .
 ```
 
-This will install the necessary dependencies (numpy, matplotlib, tqdm, torch) and make the command-line script generate_rfi_dataset available.
+This will install the necessary dependencies (numpy, matplotlib, tqdm, torch, bokeh) and make the command-line script generate_rfi_dataset available.
 Generating the Dataset
 
 The generate_rfi_dataset script is used to create the synthetic RFI dataset. You can customize the number of training and validation samples, the output directory, and the dimensions of the time-frequency (TF) planes.
