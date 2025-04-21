@@ -8,11 +8,32 @@ from torch.utils.data import Dataset
 import glob
 import torch
 
+# rfi_toolbox/scripts/generate_dataset.py
+import numpy as np
+import torch
+from torch.utils.data import Dataset
+import glob
+import os
+
 class RFIMaskDataset(Dataset):
     def __init__(self, root_dir, transform=None):
         self.root_dir = root_dir
         self.sample_dirs = sorted([d for d in glob.glob(os.path.join(root_dir, '*')) if os.path.isdir(d)])
         self.transform = transform
+        self._find_data_stats() # Calculate min and max values for normalization
+
+    def _find_data_stats(self):
+        all_min = []
+        all_max = []
+        for sample_dir in self.sample_dirs:
+            input_path = os.path.join(sample_dir, 'input.npy')
+            input_data = np.load(input_path)
+            all_min.append(np.min(input_data))
+            all_max.append(np.max(input_data))
+        self.global_min = np.min(all_min)
+        self.global_max = np.max(all_max)
+        print(f"Global Min Input Value: {self.global_min}")
+        print(f"Global Max Input Value: {self.global_max}")
 
     def __len__(self):
         return len(self.sample_dirs)
@@ -22,13 +43,22 @@ class RFIMaskDataset(Dataset):
         input_path = os.path.join(sample_dir, 'input.npy')
         mask_path = os.path.join(sample_dir, 'rfi_mask.npy')
 
-        input_tensor = torch.tensor(np.load(input_path), dtype=torch.float32)
-        mask = torch.tensor(np.load(mask_path), dtype=torch.float32).unsqueeze(0)
+        input_np = np.load(input_path)
+        mask = np.load(mask_path)
+
+        # Normalize the input data
+        if self.global_max > self.global_min:
+            input_normalized = (input_np - self.global_min) / (self.global_max - self.global_min)
+        else:
+            input_normalized = np.zeros_like(input_np) # Handle case where min equals max
+
+        input_tensor = torch.tensor(input_normalized, dtype=torch.float32)
+        mask_tensor = torch.tensor(mask, dtype=torch.float32).unsqueeze(0)
 
         if self.transform:
-            input_tensor, mask = self.transform(input_tensor, mask)
+            input_tensor, mask_tensor = self.transform(input_tensor, mask_tensor)
 
-        return input_tensor, mask
+        return input_tensor, mask_tensor
 
 def save_example_pair_npy(tf_plane, mask, index, out_dir, generate_mask=True):
     sample_dir = os.path.join(out_dir, f"{index:04d}")

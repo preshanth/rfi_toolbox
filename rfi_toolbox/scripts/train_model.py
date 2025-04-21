@@ -57,6 +57,7 @@ def main():
                 loss = criterion(output, mask) + dice_loss(output, mask)
 
             scaler.scale(loss).backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0) # Gradient clipping
             scaler.step(optimizer)
             scaler.update()
 
