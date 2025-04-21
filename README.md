@@ -16,6 +16,7 @@ or for development purposes:
 pip install -e .
 ```
 
+This will install the necessary dependencies (numpy, matplotlib, tqdm, torch, bokeh) and make the command-line script generate_rfi_dataset available.
 This will install the necessary dependencies (numpy, matplotlib, tqdm, torch, bokeh) and make the command-line scripts generate_rfi_dataset, evaluate_rfi_model, and visualize_rfi_data available.
 Generating the Dataset
 
