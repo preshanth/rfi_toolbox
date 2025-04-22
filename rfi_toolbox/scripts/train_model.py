@@ -111,7 +111,7 @@ def main():
         with torch.no_grad():
             for val_data, val_mask in val_loader:
                 val_data, val_mask = val_data.to(args.device), val_mask.to(args.device)
-                with amp.autocast():
+                with torch.amp.autocast(device_type='cuda' if torch.cuda.is_available() else 'cpu', enabled=torch.cuda.is_available()):
                     val_output = model(val_data)
                     val_loss = criterion(val_output, val_mask) + dice_loss(val_output, val_mask)
                 total_val_loss += val_loss.item()
