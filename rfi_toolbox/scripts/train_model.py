@@ -80,7 +80,10 @@ def main():
         return 1 - ((2. * intersection + smooth) /
                   (iflat.sum() + tflat.sum() + smooth))
 
-    scaler = amp.GradScaler()
+    if torch.cuda.is_available():
+        scaler = amp.GradScaler(enabled=True)
+    else:
+        scaler = amp.GradScaler(enabled=False)
 
     # Training loop
     for epoch in range(start_epoch, args.num_epochs):
