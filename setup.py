@@ -19,6 +19,7 @@ setup(
             'train_rfi_model=rfi_toolbox.scripts.train_model:main',
             'evaluate_rfi_model=rfi_toolbox.scripts.evaluate_model:main',
             'visualize_rfi_data=rfi_toolbox.visualization.visualize:main',
+            'normalize_rfi_data=rfi_toolbox.scripts.normalize_rfi_data:main',
         ],
     },
 )

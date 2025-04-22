@@ -1,21 +1,83 @@
 # rfi_toolbox/scripts/train_model.py
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data import DataLoader
-from tqdm import tqdm
 import argparse
 import os
 import numpy as np
-from rfi_toolbox.models.unet import UNet
-from rfi_toolbox.scripts.generate_dataset import RFIMaskDataset
+import torch
+from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm
+import torch.nn as nn
+import torch.optim as optim
 import torch.amp as amp
 from datetime import datetime
+from rfi_toolbox.models.unet import UNet
+
+class TrainingRFIMaskDataset(Dataset):
+    def __init__(self, data_dir, normalized_data_dir=None, transform=None, normalization=None):
+        self.data_dir = data_dir
+        self.normalized_data_dir = normalized_data_dir
+        self.transform = transform
+        self.normalization = normalization # Keep for potential in-dataset normalization (though we'll prioritize normalized_data_dir)
+
+        if normalized_data_dir:
+            self.input_dir = normalized_data_dir
+        else:
+            self.input_dir = data_dir
+
+        self.input_filename_pattern = 'input_{}.npy'
+        self.mask_filename_pattern = 'rfi_mask_{}.npy'
+        self.sample_names = [f.replace('input_', '').replace('.npy', '')
+                             for f in os.listdir(self.input_dir) if f.startswith('input_') and f.endswith('.npy')]
+
+    def __len__(self):
+        return len(self.sample_names)
+
+    def __getitem__(self, idx):
+        sample_name = self.sample_names[idx]
+        input_path = os.path.join(self.input_dir, self.input_filename_pattern.format(sample_name))
+        mask_path = os.path.join(self.data_dir, self.mask_filename_pattern.format(sample_name)) # Masks are likely in the original data_dir
+
+        input_np = np.load(input_path)
+        mask = np.load(mask_path)
+
+        input_tensor = torch.tensor(input_np, dtype=torch.float32)
+        mask_tensor = torch.tensor(mask, dtype=torch.float32).unsqueeze(0)
+
+        if self.transform:
+            input_tensor, mask_tensor = self.transform(input_tensor, mask_tensor)
+
+        # In-dataset normalization will only be performed if normalized_data_dir is None and normalization is set
+        if self.normalized_data_dir is None and self.normalization is not None:
+            if self.normalization == 'global_min_max':
+                global_min_path = os.path.join(self.data_dir, 'global_min.npy')
+                global_max_path = os.path.join(self.data_dir, 'global_max.npy')
+                if os.path.exists(global_min_path) and os.path.exists(global_max_path):
+                    global_min = np.load(global_min_path)
+                    global_max = np.load(global_max_path)
+                    if global_max > global_min:
+                        input_tensor = (input_tensor - global_min) / (global_max - global_min)
+                    else:
+                        input_tensor = torch.zeros_like(input_tensor)
+                else:
+                    print("Warning: global_min.npy or global_max.npy not found for in-dataset normalization.")
+            elif self.normalization == 'standardize':
+                mean_path = os.path.join(self.data_dir, 'mean.npy')
+                std_path = os.path.join(self.data_dir, 'std.npy')
+                if os.path.exists(mean_path) and os.path.exists(std_path):
+                    mean = np.load(mean_path)
+                    std = np.load(std_path) + 1e-8
+                    input_tensor = (input_tensor - mean) / std
+                else:
+                    print("Warning: mean.npy or std.npy not found for in-dataset standardization.")
+            elif self.normalization == 'robust_scale':
+                raise NotImplementedError("Robust scaling within TrainingRFIMaskDataset is not fully implemented. Use the normalize_rfi_data.py script.")
+
+        return input_tensor, mask_tensor
 
 def main():
     parser = argparse.ArgumentParser(description="Train a UNet model for RFI masking")
     parser.add_argument("--train_dir", type=str, default="rfi_dataset/train", help="Path to training data directory")
     parser.add_argument("--val_dir", type=str, default="rfi_dataset/val", help="Path to validation data directory")
+    parser.add_argument("--normalized_data_dir", type=str, default=None, help="Path to the directory containing pre-normalized input data")
     parser.add_argument("--batch_size", type=int, default=4, help="Batch size for training")
     parser.add_argument("--num_epochs", type=int, default=50, help="Number of training epochs (total if not resuming)")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
@@ -25,55 +87,19 @@ def main():
     parser.add_argument("--checkpoint_path", type=str, default=None, help="Path to a checkpoint file to resume training from")
     parser.add_argument("--new_lr", type=float, default=None, help="Optional new learning rate when resuming")
     parser.add_argument("--weight_decay", type=float, default=1e-5, help="Weight decay (L2 regularization) strength")
-    parser.add_argument("--normalization", type=str, default='global_min_max',
+    parser.add_argument("--normalization", type=str, default=None,
                         choices=['global_min_max', 'standardize', 'robust_scale', None],
-                        help="Normalization scheme to use for input data")
-
+                        help="Normalization scheme to use for input data (if --normalized_data_dir is not set)")
     args = parser.parse_args()
 
-    # Create checkpoint directory if it doesn't exist
-    os.makedirs(args.checkpoint_dir, exist_ok=True)
-
-    # Load datasets
-    train_dataset = RFIMaskDataset(args.train_dir, normalization=args.normalization)
-    val_dataset = RFIMaskDataset(args.val_dir, normalization=args.normalization)
-    # Create data loaders
+    # Initialize datasets
+    train_dataset = TrainingRFIMaskDataset(args.train_dir, normalized_data_dir=args.normalized_data_dir, normalization=args.normalization)
+    val_dataset = TrainingRFIMaskDataset(args.val_dir, normalized_data_dir=args.normalized_data_dir, normalization=args.normalization)
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 
-    # Initialize model
+    # Initialize model, loss function, and optimizer
     model = UNet(in_channels=args.in_channels).to(args.device)
-
-    # Load checkpoint if provided
-    start_epoch = 0
-    best_val_loss = float('inf')
-    if args.checkpoint_path:
-        try:
-            checkpoint = torch.load(args.checkpoint_path)
-            model.load_state_dict(checkpoint['model_state_dict'])
-            optimizer_state = checkpoint.get('optimizer_state_dict') # Load optimizer state if saved
-            if optimizer_state:
-                optimizer = optim.Adam(model.parameters(), lr=args.lr if args.new_lr is None else args.new_lr, weight_decay=args.weight_decay)
-                optimizer.load_state_dict(optimizer_state)
-            else:
-                optimizer = optim.Adam(model.parameters(), lr=args.lr if args.new_lr is None else args.new_lr, weight_decay=args.weight_decay)
-            start_epoch = checkpoint.get('epoch', 0) + 1 # Resume from the next epoch
-            best_val_loss = checkpoint.get('best_val_loss', float('inf'))
-            print(f"Resuming training from epoch {start_epoch} with best val loss {best_val_loss:.4f} from: {args.checkpoint_path}")
-            if args.new_lr is not None:
-                print(f"Using new learning rate: {args.new_lr}")
-            else:
-                print(f"Using learning rate from checkpoint or initial: {optimizer.param_groups[0]['lr']:.6f}")
-
-        except FileNotFoundError:
-            print(f"Warning: Checkpoint file not found at {args.checkpoint_path}. Starting from scratch.")
-            optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
-        except Exception as e:
-            print(f"Error loading checkpoint: {e}. Starting from scratch.")
-            optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
-    else:
-        optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
-
     criterion = nn.BCEWithLogitsLoss()
 
     def dice_loss(pred, target, smooth=1.):
@@ -84,13 +110,12 @@ def main():
         return 1 - ((2. * intersection + smooth) /
                   (iflat.sum() + tflat.sum() + smooth))
 
-    if torch.cuda.is_available():
-        scaler = amp.GradScaler(enabled=True)
-    else:
-        scaler = amp.GradScaler(enabled=False)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    scaler = amp.GradScaler(enabled=torch.cuda.is_available())
 
     # Training loop
-    for epoch in range(start_epoch, args.num_epochs):
+    best_val_loss = float('inf')
+    for epoch in range(args.num_epochs):
         model.train()
         total_loss = 0
         tqdm_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{args.num_epochs}", leave=False)
@@ -99,7 +124,7 @@ def main():
 
             optimizer.zero_grad()
 
-            with torch.amp.autocast(device_type='cuda' if torch.cuda.is_available() else 'cpu', enabled=torch.cuda.is_available()):
+            with amp.autocast(device_type='cuda' if torch.cuda.is_available() else 'cpu', enabled=torch.cuda.is_available()):
                 output = model(data)
                 loss = criterion(output, mask) + dice_loss(output, mask)
 
@@ -111,33 +136,34 @@ def main():
             total_loss += loss.item()
             tqdm_bar.set_postfix(loss=loss.item())
 
-        avg_train_loss = total_loss / len(train_loader)
-
+        # Validation loop
         model.eval()
-        total_val_loss = 0
+        val_loss = 0
         with torch.no_grad():
-            for val_data, val_mask in val_loader:
-                val_data, val_mask = val_data.to(args.device), val_mask.to(args.device)
-                with torch.amp.autocast(device_type='cuda' if torch.cuda.is_available() else 'cpu', enabled=torch.cuda.is_available()):
-                    val_output = model(val_data)
-                    val_loss = criterion(val_output, val_mask) + dice_loss(val_output, val_mask)
-                total_val_loss += val_loss.item()
-        avg_val_loss = total_val_loss / len(val_loader)
-
-        print(f"Epoch [{epoch+1}/{args.num_epochs}] - Train Loss: {avg_train_loss:.4f} - Val Loss: {avg_val_loss:.4f}")
+            for data, mask in val_loader:
+                data, mask = data.to(args.device), mask.to(args.device)
+                with amp.autocast(device_type='cuda' if torch.cuda.is_available() else 'cpu', enabled=torch.cuda.is_available()):
+                    output = model(data)
+                    loss = criterion(output, mask) + dice_loss(output, mask)
+                val_loss += loss.item()
+        avg_val_loss = val_loss / len(val_loader)
+        print(f"Epoch [{epoch+1}/{args.num_epochs}] - Train Loss: {total_loss/len(train_loader):.4f} - Val Loss: {avg_val_loss:.4f}")
 
         # Save checkpoint if validation loss improved
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            checkpoint_path = os.path.join(args.checkpoint_dir, f"unet_rfi_{datetime.now().strftime('%Y%m%d_%H%M%S')}_wdecay_{args.weight_decay}.pt")
+            checkpoint_path = os.path.join(args.checkpoint_dir, f"unet_rfi_epoch_{epoch+1}.pt")
             torch.save({
-                'epoch': epoch,
+                'epoch': epoch + 1,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'best_val_loss': best_val_loss,
-                'args': args # Saving training arguments for reproducibility
+                'loss': loss.item(),
+                'args': args
             }, checkpoint_path)
             print(f"Model saved to {checkpoint_path}")
 
+    print("Training finished.")
+
 if __name__ == "__main__":
+    from datetime import datetime
     main()
