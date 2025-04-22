@@ -1,39 +1,37 @@
-import argparse
 import os
-import logging
-from tqdm import trange
-import numpy as np
-from rfi_toolbox.core.simulator import RFISimulator
-from torch.utils.data import Dataset
-import glob
-import torch
-
-# rfi_toolbox/scripts/generate_dataset.py
 import numpy as np
 import torch
 from torch.utils.data import Dataset
-import glob
-import os
+from sklearn.preprocessing import RobustScaler
 
 class RFIMaskDataset(Dataset):
-    def __init__(self, root_dir, transform=None):
-        self.root_dir = root_dir
-        self.sample_dirs = sorted([d for d in glob.glob(os.path.join(root_dir, '*')) if os.path.isdir(d)])
+    def __init__(self, data_dir, transform=None, normalization='global_min_max'):
+        self.data_dir = data_dir
+        self.sample_dirs = [os.path.join(data_dir, d) for d in os.listdir(data_dir) if os.path.isdir(os.path.join(data_dir, d))]
         self.transform = transform
-        self._find_data_stats() # Calculate min and max values for normalization
+        self.normalization = normalization
+        self.global_min = np.inf
+        self.global_max = -np.inf
+        self.mean = None
+        self.std = None
+        self.robust_scaler = None
 
-    def _find_data_stats(self):
-        all_min = []
-        all_max = []
+        # Calculate global min and max, mean and std for standardization, and fit RobustScaler
+        all_data = []
         for sample_dir in self.sample_dirs:
             input_path = os.path.join(sample_dir, 'input.npy')
-            input_data = np.load(input_path)
-            all_min.append(np.min(input_data))
-            all_max.append(np.max(input_data))
-        self.global_min = np.min(all_min)
-        self.global_max = np.max(all_max)
-        print(f"Global Min Input Value: {self.global_min}")
-        print(f"Global Max Input Value: {self.global_max}")
+            input_np = np.load(input_path)
+            all_data.append(input_np)
+            self.global_min = min(self.global_min, np.min(input_np))
+            self.global_max = max(self.global_max, np.max(input_np))
+
+        all_data_np = np.concatenate([d.flatten() for d in all_data])
+        self.mean = np.mean(all_data_np)
+        self.std = np.std(all_data_np) + 1e-8 # Add epsilon for stability
+
+        # Fit RobustScaler
+        all_data_reshaped = all_data_np.reshape(-1, 1)
+        self.robust_scaler = RobustScaler().fit(all_data_reshaped)
 
     def __len__(self):
         return len(self.sample_dirs)
@@ -46,11 +44,21 @@ class RFIMaskDataset(Dataset):
         input_np = np.load(input_path)
         mask = np.load(mask_path)
 
-        # Normalize the input data
-        if self.global_max > self.global_min:
-            input_normalized = (input_np - self.global_min) / (self.global_max - self.global_min)
+        # Normalize the input data based on the chosen scheme
+        if self.normalization == 'global_min_max':
+            if self.global_max > self.global_min:
+                input_normalized = (input_np - self.global_min) / (self.global_max - self.global_min)
+            else:
+                input_normalized = np.zeros_like(input_np)
+        elif self.normalization == 'standardize':
+            input_normalized = (input_np - self.mean) / self.std
+        elif self.normalization == 'robust_scale':
+            original_shape = input_np.shape
+            input_reshaped = input_np.reshape(-1, 1)
+            input_scaled = self.robust_scaler.transform(input_reshaped)
+            input_normalized = input_scaled.reshape(original_shape)
         else:
-            input_normalized = np.zeros_like(input_np) # Handle case where min equals max
+            input_normalized = input_np # No normalization
 
         input_tensor = torch.tensor(input_normalized, dtype=torch.float32)
         mask_tensor = torch.tensor(mask, dtype=torch.float32).unsqueeze(0)

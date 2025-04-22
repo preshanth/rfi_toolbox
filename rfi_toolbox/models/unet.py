@@ -13,7 +13,7 @@ class UNetBlock(nn.Module):
             nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(out_ch),
             nn.ReLU(inplace=True),
-            nn.Dropout2d(p=0.4) # Added Dropout layer
+            # nn.Dropout2d(p=0.4) # Added Dropout layer
         )
 
     def forward(self, x):

@@ -19,12 +19,15 @@ def main():
     parser.add_argument("--batch_size", type=int, default=4, help="Batch size for training")
     parser.add_argument("--num_epochs", type=int, default=50, help="Number of training epochs (total if not resuming)")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
-    parser.add_argument("--weight_decay", type=float, default=1e-5, help="Weight decay (L2 regularization) strength")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to use (cuda or cpu)")
     parser.add_argument("--checkpoint_dir", type=str, default="checkpoints", help="Directory to save model checkpoints")
     parser.add_argument("--in_channels", type=int, default=8, help="Number of input channels to the UNet")
     parser.add_argument("--checkpoint_path", type=str, default=None, help="Path to a checkpoint file to resume training from")
     parser.add_argument("--new_lr", type=float, default=None, help="Optional new learning rate when resuming")
+    parser.add_argument("--weight_decay", type=float, default=1e-5, help="Weight decay (L2 regularization) strength")
+    parser.add_argument("--normalization", type=str, default='global_min_max',
+                        choices=['global_min_max', 'standardize', 'robust_scale', None],
+                        help="Normalization scheme to use for input data")
 
     args = parser.parse_args()
 
@@ -32,8 +35,9 @@ def main():
     os.makedirs(args.checkpoint_dir, exist_ok=True)
 
     # Load datasets
-    train_dataset = RFIMaskDataset(args.train_dir)
-    val_dataset = RFIMaskDataset(args.val_dir)
+    train_dataset = RFIMaskDataset(args.train_dir, normalization=args.normalization)
+    val_dataset = RFIMaskDataset(args.val_dir, normalization=args.normalization)
+    # Create data loaders
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 

@@ -9,7 +9,8 @@ setup(
         'matplotlib',
         'tqdm',
         'torch>=1.9.0',
-        'bokeh'
+        'bokeh',
+        'scikit-learn',
     ],
     entry_points={
         'console_scripts': [
