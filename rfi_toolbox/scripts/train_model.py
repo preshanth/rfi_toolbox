@@ -9,7 +9,7 @@ import os
 import numpy as np
 from rfi_toolbox.models.unet import UNet
 from rfi_toolbox.scripts.generate_dataset import RFIMaskDataset
-import torch.cuda.amp as amp
+import torch.amp as amp
 from datetime import datetime
 
 def main():
@@ -92,7 +92,7 @@ def main():
 
             optimizer.zero_grad()
 
-            with amp.autocast():
+            with torch.amp.autocast(device_type='cuda' if torch.cuda.is_available() else 'cpu', enabled=torch.cuda.is_available()):
                 output = model(data)
                 loss = criterion(output, mask) + dice_loss(output, mask)
 
