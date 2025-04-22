@@ -115,3 +115,30 @@ Example
 
 visualize_rfi_data --dataset_dir my_rfi_data/val --model_path checkpoints/unet_rfi_best.pt --device cuda --num_samples 50
 ```
+
+Options for Resuming Training
+
+To enable resuming training from a checkpoint, the following command-line arguments have been added to the `train_rfi_model` script:
+
+* `--checkpoint_path`: Path to a `.pt` file containing a saved model checkpoint. If provided, the script will attempt to load the model's state and resume training from the epoch specified in the checkpoint.
+* `--new_lr`: (Optional) A new learning rate to use when resuming training. If not provided, the learning rate from the checkpoint (if available) or the initial `--lr` will be used.
+
+How to Resume Training
+
+1.  **Locate your checkpoint file:** After a training run, the best model checkpoints are saved in the `checkpoints` directory. The filenames are typically timestamped (e.g., `unet_rfi_20250421_183849.pt`).
+
+2.  **Run the training script with the `--checkpoint_path` argument:** Provide the path to the checkpoint file you want to resume from. You also need to specify the total number of epochs you want to train for using the `--num_epochs` argument.
+
+    ```bash
+    train_rfi_model --train_dir path/to/train_data --val_dir path/to/val_data --batch_size 8 --lr 5e-5 --device cuda --in_channels 8 --checkpoint_path checkpoints/your_last_checkpoint.pt --num_epochs 150
+    ```
+
+    Replace `path/to/train_data` and `path/to/val_data` with your data directories, and `checkpoints/your_last_checkpoint.pt` with the actual path to your checkpoint file. Adjust other arguments like `--batch_size`, `--lr`, and `--in_channels` as needed (they will be overridden by the checkpoint if its `args` were saved).
+
+3.  **(Optional) Specify a new learning rate:** If you want to use a different learning rate after resuming, use the `--new_lr` argument:
+
+    ```bash
+    train_rfi_model --train_dir path/to/train_data --val_dir path/to/val_data --batch_size 8 --lr 5e-5 --device cuda --in_channels 8 --checkpoint_path checkpoints/your_last_checkpoint.pt --num_epochs 150 --new_lr 1e-6
+    ```
+
+By using these options, you can continue training your model from a specific point, which is useful for extending training runs or fine-tuning models.
