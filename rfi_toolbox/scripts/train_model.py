@@ -122,7 +122,7 @@ def main():
         # Save checkpoint if validation loss improved
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            checkpoint_path = os.path.join(args.checkpoint_dir, f"unet_rfi_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pt")
+            checkpoint_path = os.path.join(args.checkpoint_dir, f"unet_rfi_{datetime.now().strftime('%Y%m%d_%H%M%S')}_wdecay_{args.weight_decay}.pt")
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
