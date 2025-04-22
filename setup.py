@@ -11,6 +11,7 @@ setup(
         'torch>=1.9.0',
         'bokeh',
         'scikit-learn',
+        'scipy'
     ],
     entry_points={
         'console_scripts': [
