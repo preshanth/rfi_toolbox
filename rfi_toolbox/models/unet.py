@@ -1,5 +1,5 @@
 # rfi_toolbox/models/unet.py
-import torch
+iimport torch
 import torch.nn as nn
 import torch.nn.functional as F
 
@@ -7,19 +7,20 @@ class UNetBlock(nn.Module):
     def __init__(self, in_ch, out_ch):
         super(UNetBlock, self).__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1),
+            nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(out_ch),
             nn.ReLU(inplace=True),
-            nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=1),
+            nn.Conv2d(out_ch, out_ch, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(out_ch),
-            nn.ReLU(inplace=True)
+            nn.ReLU(inplace=True),
+            nn.Dropout2d(p=0.1) # Added Dropout layer
         )
 
     def forward(self, x):
         return self.conv(x)
 
 class UNet(nn.Module):
-    def __init__(self, in_channels=4, out_channels=1, init_features=32):
+    def __init__(self, in_channels=8, out_channels=1, init_features=32):
         super(UNet, self).__init__()
         features = init_features
         self.encoder1 = UNetBlock(in_channels, features)
