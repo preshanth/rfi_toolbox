@@ -10,6 +10,8 @@ import numpy as np
 from rfi_toolbox.models.unet import UNet
 from rfi_toolbox.scripts.generate_dataset import RFIMaskDataset
 import torch.cuda.amp as amp
+from datetime import datetime
+
 
 def main():
     parser = argparse.ArgumentParser(description="Train a UNet model for RFI masking")
@@ -91,10 +93,9 @@ def main():
         # Save checkpoint if validation loss improved
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            checkpoint_path = os.path.join(args.checkpoint_dir, f"unet_rfi_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pt")
+            checkpoint_path = os.path.join(args.checkpoint_dir, f"unet_rfi_epoch_{epoch+1}.pt")
             torch.save(model.state_dict(), checkpoint_path)
             print(f"Model saved to {checkpoint_path}")
 
 if __name__ == "__main__":
-    from datetime import datetime
     main()
