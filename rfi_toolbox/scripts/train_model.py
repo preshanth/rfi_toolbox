@@ -19,6 +19,7 @@ def main():
     parser.add_argument("--batch_size", type=int, default=4, help="Batch size for training")
     parser.add_argument("--num_epochs", type=int, default=50, help="Number of training epochs (total if not resuming)")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate")
+    parser.add_argument("--weight_decay", type=float, default=1e-5, help="Weight decay (L2 regularization) strength")
     parser.add_argument("--device", type=str, default="cuda" if torch.cuda.is_available() else "cpu", help="Device to use (cuda or cpu)")
     parser.add_argument("--checkpoint_dir", type=str, default="checkpoints", help="Directory to save model checkpoints")
     parser.add_argument("--in_channels", type=int, default=8, help="Number of input channels to the UNet")
@@ -48,10 +49,10 @@ def main():
             model.load_state_dict(checkpoint['model_state_dict'])
             optimizer_state = checkpoint.get('optimizer_state_dict') # Load optimizer state if saved
             if optimizer_state:
-                optimizer = optim.Adam(model.parameters(), lr=args.lr if args.new_lr is None else args.new_lr, weight_decay=1e-5)
+                optimizer = optim.Adam(model.parameters(), lr=args.lr if args.new_lr is None else args.new_lr, weight_decay=args.weight_decay)
                 optimizer.load_state_dict(optimizer_state)
             else:
-                optimizer = optim.Adam(model.parameters(), lr=args.lr if args.new_lr is None else args.new_lr, weight_decay=1e-5)
+                optimizer = optim.Adam(model.parameters(), lr=args.lr if args.new_lr is None else args.new_lr, weight_decay=args.weight_decay)
             start_epoch = checkpoint.get('epoch', 0) + 1 # Resume from the next epoch
             best_val_loss = checkpoint.get('best_val_loss', float('inf'))
             print(f"Resuming training from epoch {start_epoch} with best val loss {best_val_loss:.4f} from: {args.checkpoint_path}")
