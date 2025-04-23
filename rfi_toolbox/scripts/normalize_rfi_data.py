@@ -35,7 +35,7 @@ def process_directory(input_dir, output_dir, normalization_method):
 
     for root, _, files in os.walk(input_dir):
         for filename in files:
-            if filename.startswith('input_') and filename.endswith('.npy'):
+            if filename == 'input.npy':  # Changed the filename matching condition
                 total_files += 1
                 input_path = os.path.join(root, filename)
                 relative_path = os.path.relpath(root, input_dir)
