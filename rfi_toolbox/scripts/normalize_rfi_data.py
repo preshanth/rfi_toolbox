@@ -30,17 +30,27 @@ def normalize_array(data, method='standardize'):
 
 def process_directory(input_dir, output_dir, normalization_method):
     os.makedirs(output_dir, exist_ok=True)
-    input_files = [f for f in os.listdir(input_dir) if f.startswith('input_') and f.endswith('.npy')]
-    print(f"Processing {len(input_files)} input files in '{input_dir}' with normalization: {normalization_method}")
-    for filename in tqdm(input_files):
-        input_path = os.path.join(input_dir, filename)
-        output_path = os.path.join(output_dir, filename)
-        try:
-            input_data = np.load(input_path)
-            normalized_data = normalize_array(input_data, method=normalization_method)
-            np.save(output_path, normalized_data)
-        except Exception as e:
-            print(f"Error processing {filename}: {e}")
+    total_files = 0
+    processed_files = 0
+
+    for root, _, files in os.walk(input_dir):
+        for filename in files:
+            if filename.startswith('input_') and filename.endswith('.npy'):
+                total_files += 1
+                input_path = os.path.join(root, filename)
+                relative_path = os.path.relpath(root, input_dir)
+                output_subdir = os.path.join(output_dir, relative_path)
+                os.makedirs(output_subdir, exist_ok=True)
+                output_path = os.path.join(output_subdir, filename)
+                try:
+                    input_data = np.load(input_path)
+                    normalized_data = normalize_array(input_data, method=normalization_method)
+                    np.save(output_path, normalized_data)
+                    processed_files += 1
+                except Exception as e:
+                    print(f"Error processing {input_path}: {e}")
+
+    print(f"Processed {processed_files}/{total_files} input files in '{input_dir}' with normalization: {normalization_method}")
 
 def main():
     parser = argparse.ArgumentParser(description="Normalize RFI dataset numpy files.")
