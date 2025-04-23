@@ -32,16 +32,18 @@ def process_directory(input_dir, output_dir, normalization_method):
     os.makedirs(output_dir, exist_ok=True)
     total_files = 0
     processed_files = 0
+    mask_files = 0
 
     for root, _, files in os.walk(input_dir):
         for filename in files:
+            input_path = os.path.join(root, filename)
+            relative_path = os.path.relpath(root, input_dir)
+            output_subdir = os.path.join(output_dir, relative_path)
+            os.makedirs(output_subdir, exist_ok=True)
+            output_path = os.path.join(output_subdir, filename)
+
             if filename == 'input.npy':  # Changed the filename matching condition
                 total_files += 1
-                input_path = os.path.join(root, filename)
-                relative_path = os.path.relpath(root, input_dir)
-                output_subdir = os.path.join(output_dir, relative_path)
-                os.makedirs(output_subdir, exist_ok=True)
-                output_path = os.path.join(output_subdir, filename)
                 try:
                     input_data = np.load(input_path)
                     normalized_data = normalize_array(input_data, method=normalization_method)
@@ -49,8 +51,13 @@ def process_directory(input_dir, output_dir, normalization_method):
                     processed_files += 1
                 except Exception as e:
                     print(f"Error processing {input_path}: {e}")
+            elif filename == 'rfi_mask.npy':
+                mask_files += 1
+                # Copy the mask files to the output path without normalization using shutil
+                shutil.copy(input_path, output_path)
 
     print(f"Processed {processed_files}/{total_files} input files in '{input_dir}' with normalization: {normalization_method}")
+    print(f"Copied {mask_files} mask files to '{output_dir}'.")
 
 def main():
     parser = argparse.ArgumentParser(description="Normalize RFI dataset numpy files.")
