@@ -19,7 +19,7 @@ class TrainingRFIMaskDataset(Dataset):
         self.normalized_data_dir = normalized_data_dir
         self.transform = transform
         self.normalization = normalization
-
+        self.augment = augment
         self.input_files = []
         self.mask_files = []
 
@@ -38,7 +38,9 @@ class TrainingRFIMaskDataset(Dataset):
 
         # Ensure we have corresponding input and mask files
         self.samples = list(zip(self.input_files, self.mask_files))
-        self.augment = augment
+        
+
+
         if self.augment:
             self.augmentation = A.Compose([
                 A.HorizontalFlip(p=0.5),
@@ -60,21 +62,20 @@ class TrainingRFIMaskDataset(Dataset):
         input_np = np.load(input_path)
         mask = np.load(mask_path)
 
+        #print(f"Input shape: {input_np.shape}, Mask shape: {mask.shape}, Mask dtype: {mask.dtype}")
+
+        if mask.dtype == np.bool_:
+            mask = mask.astype(np.uint8)
+
         if self.augment:
-            augmented = self.augmentation(image=input_np, mask=mask)
-            input_tensor = augmented['image']
+            # Transpose to (H, W, C) for Albumentations
+            input_np_transposed = input_np.transpose(1, 2, 0)
+            augmented = self.augmentation(image=input_np_transposed, mask=mask)
+            input_tensor = augmented['image'].float() # ToTensorV2 will make it (C, H, W)
             mask_tensor = augmented['mask'].unsqueeze(0).float()
         else:
-            input_tensor = self.to_tensor(image=input_np)
-            mask_tensor = self.to_tensor(image=mask).unsqueeze(0).float()
-
-        if self.transform:
-            input_tensor, mask_tensor = self.transform(input_tensor, mask_tensor)
-
-        # In-dataset normalization (if normalized_data_dir is None)
-        if self.normalized_data_dir is None and self.normalization is not None:
-            # ... (your in-dataset normalization logic here) ...
-            pass
+            input_tensor = torch.tensor(input_np, dtype=torch.float32).float() # Keep original (C, H, W)
+            mask_tensor = torch.tensor(mask, dtype=torch.float32).unsqueeze(0).float()
 
         return input_tensor, mask_tensor
 
