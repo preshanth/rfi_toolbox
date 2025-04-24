@@ -10,9 +10,11 @@ import torch.optim as optim
 import torch.amp as amp
 from datetime import datetime
 from rfi_toolbox.models.unet import UNet
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 
 class TrainingRFIMaskDataset(Dataset):
-    def __init__(self, data_dir, normalized_data_dir=None, transform=None, normalization=None):
+    def __init__(self, data_dir, normalized_data_dir=None, transform=None, normalization=None, augment=True):
         self.data_dir = data_dir
         self.normalized_data_dir = normalized_data_dir
         self.transform = transform
@@ -36,6 +38,19 @@ class TrainingRFIMaskDataset(Dataset):
 
         # Ensure we have corresponding input and mask files
         self.samples = list(zip(self.input_files, self.mask_files))
+        self.augment = augment
+        if self.augment:
+            self.augmentation = A.Compose([
+                A.HorizontalFlip(p=0.5),
+                A.VerticalFlip(p=0.5),
+                A.Rotate(limit=15, p=0.5),
+                A.ShiftScaleRotate(shift_limit=0.05, scale_limit=0.05, rotate_limit=10, p=0.5),
+                # A.RandomBrightnessContrast(brightness_limit=0.1, contrast_limit=0.1, p=0.3),
+                # A.GaussNoise(var_limit=(0.001, 0.01), p=0.2),
+                ToTensorV2(), # Convert to PyTorch tensors (Albumentations uses NumPy arrays)
+            ])
+        else:
+            self.to_tensor = ToTensorV2()
 
     def __len__(self):
         return len(self.samples)
@@ -45,8 +60,13 @@ class TrainingRFIMaskDataset(Dataset):
         input_np = np.load(input_path)
         mask = np.load(mask_path)
 
-        input_tensor = torch.tensor(input_np, dtype=torch.float32)
-        mask_tensor = torch.tensor(mask, dtype=torch.float32).unsqueeze(0)
+        if self.augment:
+            augmented = self.augmentation(image=input_np, mask=mask)
+            input_tensor = augmented['image']
+            mask_tensor = augmented['mask'].unsqueeze(0).float()
+        else:
+            input_tensor = self.to_tensor(image=input_np)
+            mask_tensor = self.to_tensor(image=mask).unsqueeze(0).float()
 
         if self.transform:
             input_tensor, mask_tensor = self.transform(input_tensor, mask_tensor)
@@ -75,11 +95,12 @@ def main():
     parser.add_argument("--normalization", type=str, default=None,
                         choices=['global_min_max', 'standardize', 'robust_scale', None],
                         help="Normalization scheme to use for input data (if --normalized_data_dir is not set)")
+    parser.add_argument("--augment", action='store_true', help="Apply data augmentation during training")
     args = parser.parse_args()
 
     # Initialize datasets
-    train_dataset = TrainingRFIMaskDataset(args.train_dir, normalized_data_dir=args.normalized_data_dir, normalization=args.normalization)
-    val_dataset = TrainingRFIMaskDataset(args.val_dir, normalized_data_dir=args.normalized_data_dir, normalization=args.normalization)
+    train_dataset = TrainingRFIMaskDataset(args.train_dir, normalized_data_dir=args.normalized_data_dir, normalization=args.normalization, augment=args.augment)
+    val_dataset = TrainingRFIMaskDataset(args.val_dir, normalized_data_dir=args.normalized_data_dir, normalization=args.normalization) # should I add augmentation here ?
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 
