@@ -170,6 +170,14 @@ def main():
             print(f"Model saved to {checkpoint_path}")
 
     print("Training finished.")
+    print(f"Best validation loss: {best_val_loss:.4f}")
+    # Save final model
+    final_model_path = os.path.join(args.checkpoint_dir, "unet_rfi_final.pt")
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'args': args
+    }, final_model_path)
+    print(f"Final model saved to {final_model_path}")
 
 if __name__ == "__main__":
     from datetime import datetime
