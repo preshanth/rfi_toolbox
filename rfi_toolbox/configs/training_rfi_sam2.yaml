@@ -1,0 +1,58 @@
+defaults:
+  - override hydra/launcher: basic
+  - override hydra/output: sam2_logs
+  - override hydra/job_logging: hydra_logging
+
+launcher:
+  _target_: training.train.LauncherConfig
+  use_cluster: 0 # Force local
+  num_nodes: 1
+  gpus_per_node: 1
+  experiment_log_dir: null # Will default
+
+trainer:
+  _target_: training.trainer.Trainer
+  max_epochs: 100 # Adjust as needed
+  save_checkpoint_interval: 10
+  val_check_interval: 10
+  checkpointer:
+    _target_: training.utils.checkpointing.Checkpointer
+    save_dir: ${launcher.experiment_log_dir}/checkpoints
+    save_freq: ${trainer.save_checkpoint_interval}
+
+model:
+  _target_: model.sam2_train.SAM2Train
+  pretrained_checkpoint: "facebook/sam2-hiera-large"
+  image_size: 1024 # Set the target image size here
+
+optimizer:
+  _target_: optimizer.AdamW
+  lr: 1e-4
+  weight_decay: 0.01
+
+data:
+  train:
+    _target_: training.dataset.sam2_datasets.SingleDataset
+    dataset:
+      _target_: dataset.rfi_amplitude_dataset.sam2_rfi_amplitude_dataset.SAM2RFIAmplitudeDataset
+      data_dir: "rfi_dataset/train_normalized_robust/"
+      image_size: ${model.image_size}
+    shuffle: True
+    num_workers: 4 # Adjust based on your CPU
+    batch_size: 2 # Reduce batch size for single V100
+    pin_memory: True
+    drop_last: True
+    # collate_fn: # The default should work for this format
+
+  val:
+    _target_: training.dataset.sam2_datasets.SingleDataset
+    dataset:
+      _target_: dataset.rfi_amplitude_dataset.sam2_rfi_amplitude_dataset.SAM2RFIAmplitudeDataset
+      data_dir: "rfi_dataset/val_normalized_robust/"
+      image_size: ${model.image_size}
+    shuffle: False
+    num_workers: 4 # Adjust based on your CPU
+    batch_size: 2 # Reduce batch size for single V100
+    pin_memory: True
+    drop_last: False
+    # collate_fn: # The default should work for this format
