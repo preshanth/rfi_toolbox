@@ -120,8 +120,8 @@ class UNetBigger(nn.Module):
 if __name__ == '__main__':
     # Example usage:
     x = torch.randn((1, 8, 512, 512)) # Batch size 1, 8 channels, 512x512
-    model = UNet(in_channels=8, out_channels=1, init_features=64)
-    # model = UNetBigger(in_channels=8, out_channels=1, init_features=64)
+    #model = UNet(in_channels=8, out_channels=1, init_features=64)
+    model = UNetBigger(in_channels=8, out_channels=1, init_features=64)
     output = model(x)
     print(f"Input shape: {x.shape}")
     print(f"Output shape: {output.shape}")
