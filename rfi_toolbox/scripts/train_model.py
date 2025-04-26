@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.amp as amp
 from datetime import datetime
-from rfi_toolbox.models.unet import UNet
+from rfi_toolbox.models.unet import UNet,UNetBigger
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
@@ -106,7 +106,7 @@ def main():
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 
     # Initialize model, loss function, and optimizer
-    model = UNet(in_channels=args.in_channels).to(args.device)
+    model = UNetBigger(in_channels=args.in_channels).to(args.device)
     criterion = nn.BCEWithLogitsLoss()
 
     def dice_loss(pred, target, smooth=1.):

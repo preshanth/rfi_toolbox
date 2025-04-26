@@ -76,10 +76,52 @@ class UNet(nn.Module):
         # Final convolution
         return self.final_conv(dec1)
 
+class UNetBigger(nn.Module):
+    def __init__(self, in_channels=1, out_channels=1, init_features=32):
+        super().__init__()
+        features = init_features
+        self.encoder1 = Encoder(in_channels, features)
+        self.encoder2 = Encoder(features, features * 2)
+        self.encoder3 = Encoder(features * 2, features * 4)
+        self.encoder4 = Encoder(features * 4, features * 8)
+        self.encoder5 = Encoder(features * 8, features * 16) # Added layer
+
+        self.bottleneck = DoubleConv(features * 16, features * 32) # Adjusted bottleneck
+
+        self.decoder5 = Decoder(features * 32, features * 16) # Added layer
+        self.decoder4 = Decoder(features * 16, features * 8)
+        self.decoder3 = Decoder(features * 8, features * 4)
+        self.decoder2 = Decoder(features * 4, features * 2)
+        self.decoder1 = Decoder(features * 2, features)
+
+        self.final_conv = nn.Conv2d(features, out_channels, kernel_size=1)
+
+    def forward(self, x):
+        # Encoder
+        enc1_pool, enc1 = self.encoder1(x)
+        enc2_pool, enc2 = self.encoder2(enc1_pool)
+        enc3_pool, enc3 = self.encoder3(enc2_pool)
+        enc4_pool, enc4 = self.encoder4(enc3_pool)
+        enc5_pool, enc5 = self.encoder5(enc4_pool) # Added layer
+
+        # Bottleneck
+        bottleneck = self.bottleneck(enc5_pool) # Adjusted bottleneck
+
+        # Decoder
+        dec5 = self.decoder5(bottleneck, enc5) # Added layer
+        dec4 = self.decoder4(dec5, enc4)
+        dec3 = self.decoder3(dec4, enc3)
+        dec2 = self.decoder2(dec3, enc2)
+        dec1 = self.decoder1(dec2, enc1)
+
+        # Final convolution
+        return self.final_conv(dec1)
+
 if __name__ == '__main__':
     # Example usage:
     x = torch.randn((1, 8, 512, 512)) # Batch size 1, 8 channels, 512x512
-    model = UNet(in_channels=8, out_channels=1, init_features=128)
+    model = UNet(in_channels=8, out_channels=1, init_features=64)
+    # model = UNetBigger(in_channels=8, out_channels=1, init_features=64)
     output = model(x)
     print(f"Input shape: {x.shape}")
     print(f"Output shape: {output.shape}")
