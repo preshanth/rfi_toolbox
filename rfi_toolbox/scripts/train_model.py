@@ -106,7 +106,7 @@ def main():
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 
     # Initialize model, loss function, and optimizer
-    model = UNetBigger(in_channels=args.in_channels).to(args.device)
+    model = UNetOverfit(in_channels=args.in_channels).to(args.device)
     criterion = nn.BCEWithLogitsLoss()
 
     def dice_loss(pred, target, smooth=1.):
