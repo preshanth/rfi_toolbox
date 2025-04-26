@@ -156,6 +156,10 @@ def main():
         avg_val_loss = val_loss / len(val_loader)
         print(f"Epoch [{epoch+1}/{args.num_epochs}] - Train Loss: {total_loss/len(train_loader):.4f} - Val Loss: {avg_val_loss:.4f}")
 
+        #if avg_val_loss is nan:
+        print("Validation loss is NaN, stopping training.")
+        break
+
         # Save checkpoint if validation loss improved
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
