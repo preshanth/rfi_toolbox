@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rfi_toolbox"
+version = "0.1.0"
+description = "A toolbox for RFI-related tasks"
+readme = "README.md"
+license = { text = "Specify your license here" }
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }
+]
+dependencies = [
+    "numpy",
+    "matplotlib",
+    "tqdm",
+    "torch >= 1.9.0",
+    "bokeh",
+    "scikit-learn",
+    "scipy",
+    "albumentations"
+]
+
+[project.scripts]
+generate_rfi_dataset = "rfi_toolbox.scripts.generate_dataset:main"
+train_rfi_model = "rfi_toolbox.scripts.train_model:main"
+evaluate_rfi_model = "rfi_toolbox.scripts.evaluate_model:main"
+visualize_rfi_data = "rfi_toolbox.visualization.visualize:main"
+normalize_rfi_data = "rfi_toolbox.scripts.normalize_rfi_data:main"
