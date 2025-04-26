@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.amp as amp
 from datetime import datetime
-from rfi_toolbox.models.unet import UNet,UNetBigger
+from rfi_toolbox.models.unet import UNet,UNetBigger, UNetOverfit
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
