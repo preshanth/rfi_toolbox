@@ -5,11 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "rfi_toolbox"
 version = "0.1.0"
-description = "A toolbox for RFI-related tasks"
+description = "A toolbox for RFI-related AI tasks"
 readme = "README.md"
-license = { text = "Specify your license here" }
+license = { text = "GNU GPLv3" }
 authors = [
-    { name = "Your Name", email = "your.email@example.com" }
+    { name = "Preshanth Jagannathan", email = "pjaganna@nrao.edu" }
 ]
 dependencies = [
     "numpy",
