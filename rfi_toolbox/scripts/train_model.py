@@ -9,7 +9,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.amp as amp
 # from datetime import datetime
-from rfi_toolbox.models.unet import UNetDifferentActivation
+from rfi_toolbox.models.unet import UNetDifferentActivation, UNet, UNetBigger, UNetOverfit
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
@@ -97,6 +97,7 @@ def main():
                         choices=['global_min_max', 'standardize', 'robust_scale', None],
                         help="Normalization scheme to use for input data (if --normalized_data_dir is not set)")
     parser.add_argument("--augment", action='store_true', help="Apply data augmentation during training")
+    parser.add_argument("--model_type", type=str, default="unet", choices=["unet", "unet_bigger", "unet_overfit", "unet_activation"], help="Type of UNet model to use")
     args = parser.parse_args()
 
     # Initialize datasets
@@ -106,7 +107,16 @@ def main():
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
 
     # Initialize model, loss function, and optimizer
-    model = UNetDifferentActivation(in_channels=args.in_channels).to(args.device)
+    if args.model_type == "unet":
+        model = UNet(in_channels=args.in_channels, init_features=32).to(args.device)
+    elif args.model_type == "unet_bigger":
+        model = UNetBigger(in_channels=args.in_channels, init_features=32).to(args.device)
+    elif args.model_type == "unet_overfit":
+        model = UNetOverfit(in_channels=args.in_channels, init_features=32).to(args.device)
+    elif args.model_type == "unet_activation":
+        model = UNetDifferentActivation(in_channels=args.in_channels, init_features=32).to(args.device)
+    else:
+        raise ValueError(f"Unknown model type: {args.model_type}")
     criterion = nn.BCEWithLogitsLoss()
 
     def dice_loss(pred, target, smooth=1.):
