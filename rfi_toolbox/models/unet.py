@@ -237,26 +237,37 @@ class UNetDifferentActivation(nn.Module):
         super().__init__()
         features = init_features
         self.encoder1 = EncoderDifferentActivation(in_channels, features, activation)
-        # ... (rest of the encoders and decoders with the new activation)
+        self.encoder2 = EncoderDifferentActivation(features, features * 2, activation)
+        self.encoder3 = EncoderDifferentActivation(features * 2, features * 4, activation)
+        self.encoder4 = EncoderDifferentActivation(features * 4, features * 8, activation)
+
         self.bottleneck = DoubleConvDifferentActivation(features * 8, features * 16, activation)
-        # ... (rest of the decoders)
+
+        self.decoder4 = DecoderDifferentActivation(features * 16, features * 8, activation)
+        self.decoder3 = DecoderDifferentActivation(features * 8, features * 4, activation)
+        self.decoder2 = DecoderDifferentActivation(features * 4, features * 2, activation)
+        self.decoder1 = DecoderDifferentActivation(features * 2, features, activation)
+
         self.final_conv = nn.Conv2d(features, out_channels, kernel_size=1)
 
     def forward(self, x):
         # Encoder
         enc1_pool, enc1 = self.encoder1(x)
-        # Add the rest of the encoder layers here
-        # Example: enc2_pool, enc2 = self.encoder2(enc1_pool)
+        enc2_pool, enc2 = self.encoder2(enc1_pool)
+        enc3_pool, enc3 = self.encoder3(enc2_pool)
+        enc4_pool, enc4 = self.encoder4(enc3_pool)
 
         # Bottleneck
-        bottleneck = self.bottleneck(enc1_pool)  # Adjust based on the encoder layers
+        bottleneck = self.bottleneck(enc4_pool) 
 
         # Decoder
-        # Add the decoder layers here
-        # Example: dec1 = self.decoder1(bottleneck, enc1)
+        dec4 = self.decoder4(bottleneck, enc4)
+        dec3 = self.decoder3(dec4, enc3)
+        dec2 = self.decoder2(dec3, enc2)
+        dec1 = self.decoder1(dec2, enc1)
 
         # Final convolution
-        return self.final_conv(bottleneck)  # Adjust based on the decoder layers
+        return self.final_conv(dec1)
 
 if __name__ == '__main__':
     # Example usage:
