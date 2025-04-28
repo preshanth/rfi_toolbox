@@ -29,17 +29,17 @@ generate_rfi_dataset [options]
 ```
 Options
 
-    `--samples_training <integer>`: Number of training samples to generate (default: 1000).
-    `--samples_validation <integer>`: Number of validation samples to generate (default: 200).
-    `--output_dir <path>`: Output directory for the generated dataset (default: `rfi_dataset`).
-    `--time_bins <integer>`: Number of time bins in the TF plane (default: 1024).
-    `--frequency_bins <integer>`: Number of frequency bins in the TF plane (default: 1024).
-    `--generate_mask`: Flag to enable the generation of RFI masks (default: `True`).
-    `--no_generate_mask`: Flag to disable the generation of RFI masks.
-    `--use_ms`: Flag to enable loading data from a Measurement Set.
-    `--ms_name <path>`: Path to the Measurement Set. Required if `--use_ms` is set.
-    `--train_field <integer>`: `FIELD_ID` to use for the training set when loading from an MS.
-    `--val_field <integer>`: `FIELD_ID` to use for the validation set when loading from an MS.
+    --samples_training <integer>: Number of training samples to generate (default: 1000).
+    --samples_validation <integer>: Number of validation samples to generate (default: 200).
+    --output_dir <path>: Output directory for the generated dataset (default: `rfi_dataset`).
+    --time_bins <integer>: Number of time bins in the TF plane (default: 1024).
+    --frequency_bins <integer>: Number of frequency bins in the TF plane (default: 1024).
+    --generate_mask: Flag to enable the generation of RFI masks (default: `True`).
+    --no_generate_mask: Flag to disable the generation of RFI masks.
+    --use_ms: Flag to enable loading data from a Measurement Set.
+    --ms_name <path>: Path to the Measurement Set. Required if `--use_ms` is set.
+    --train_field <integer>: `FIELD_ID` to use for the training set when loading from an MS.
+    --val_field <integer>: `FIELD_ID` to use for the validation set when loading from an MS.
 
 ### Generating Synthetic Data
 
@@ -66,14 +66,14 @@ train_rfi_model [options]
 ```
 Options
 
-    `--train_dir` <path>: Path to the training data directory (default: rfi_dataset/train).
-    `--val_dir` <path>: Path to the validation data directory (default: rfi_dataset/val).
-    `--batch_size` <int>: Batch size for training (default: 4).
-    `--num_epochs` <int>: Number of training epochs (default: 50).
-    `--lr` <float>: Learning rate (default: 1e-4).
-    `--device` <str>: Device to use (cuda or cpu, default: cuda if available).
-    `--checkpoint_dir` <path>: Directory to save model checkpoints (default: checkpoints).
-    `--in_channels` <int>: Number of input channels to the UNet (default: 8).
+    --train_dir <path>: Path to the training data directory (default: rfi_dataset/train).
+    --val_dir <path>: Path to the validation data directory (default: rfi_dataset/val).
+    --batch_size <int>: Batch size for training (default: 4).
+    --num_epochs <int>: Number of training epochs (default: 50).
+    --lr <float>: Learning rate (default: 1e-4).
+    --device <str>: Device to use (cuda or cpu, default: cuda if available).
+    --checkpoint_dir <path>: Directory to save model checkpoints (default: checkpoints).
+    --in_channels <int>: Number of input channels to the UNet (default: 8).
 
 Example
 ```bash
@@ -95,9 +95,9 @@ Arguments
 
 Options
 
-    `--batch_size` <int>: Batch size to use during evaluation (default: 8).
-    `--device` <str>: The PyTorch device to use ('cuda' or 'cpu', default: cuda if available).
-    `--in_channels` <int>: The number of input channels the model expects (default: 8).
+    --batch_size <int>: Batch size to use during evaluation (default: 8).
+    --device <str>: The PyTorch device to use ('cuda' or 'cpu', default: cuda if available).
+    --in_channels <int>: The number of input channels the model expects (default: 8).
 
 Example
 ```bash
@@ -114,15 +114,15 @@ visualize_rfi_data --dataset_dir <path_to_validation_data> [options]
 ```
 Arguments
 
-    `--dataset_dir` <path_to_validation_data>: (Required) The path to the directory containing your validation dataset.
+    --dataset_dir <path_to_validation_data>: (Required) The path to the directory containing your validation dataset.
 
 Options
 
-    `--model_path` <path_to_model_checkpoint>: Path to the saved .pt file of your trained model (default: None).
-    `--device` <str>: The PyTorch device to use for model inference ('cuda' or 'cpu', default: 'cpu').
-    `--in_channels` <int>: The number of input channels the model expects (default: 8).
-    `--num_samples` <int>: The number of random validation samples to visualize (default: 100).
-    `--seed` <int>: Random seed for selecting the subset of samples (default: 42).
+    --model_path <path_to_model_checkpoint>: Path to the saved .pt file of your trained model (default: None).
+    --device <str>: The PyTorch device to use for model inference ('cuda' or 'cpu', default: 'cpu').
+    --in_channels <int>: The number of input channels the model expects (default: 8).
+    --num_samples <int>: The number of random validation samples to visualize (default: 100).
+    --seed <int>: Random seed for selecting the subset of samples (default: 42).
 
 Example
 ```bash
