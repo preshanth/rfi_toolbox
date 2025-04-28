@@ -1,7 +1,7 @@
 # rfi_toolbox/models/unet.py
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+# Removed unused import
 
 class DoubleConv(nn.Module):
     def __init__(self, in_channels, out_channels):
