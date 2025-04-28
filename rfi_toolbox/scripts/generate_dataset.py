@@ -168,7 +168,10 @@ class RFIMaskDataset(Dataset):
             for spw_spec, spw, num_chan in zip(same_spw_array, range(same_num_spw), same_channels_per_spw_array):
                 subtable = self.tb.query(f'DATA_DESC_ID=={spw_spec} && ANTENNA1=={i} && ANTENNA2=={j}')
                 if subtable.nrows() > 0:
-                    combined_data[:, spw * init_chan:(spw + 1) * init_chan, :] += subtable.getcol('DATA')
+                    spw_data = subtable.getcol('DATA')
+                    # Transpose spw_data to (npol, nchan, ntimes)
+                    spw_data = np.transpose(spw_data, (0, 1, 2))
+                    combined_data[:, spw * init_chan:(spw + 1) * init_chan, :] += spw_data
 
             # Create a sample directory for this baseline
             sample_dir = os.path.join(self.data_dir, f"ant{i}_ant{j}")
