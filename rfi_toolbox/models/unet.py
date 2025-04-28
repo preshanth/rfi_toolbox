@@ -117,8 +117,6 @@ class UNetBigger(nn.Module):
         # Final convolution
         return self.final_conv(dec1)
 
-
-
 class DoubleConvOverfit(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
