@@ -273,6 +273,7 @@ if __name__ == '__main__':
     #model = UNet(in_channels=8, out_channels=1, init_features=64)
     model = UNetBigger(in_channels=8, out_channels=1, init_features=64)
     model_overfit = UNetOverfit(in_channels=8, out_channels=1, init_features=128)    
-    output = model_overfit(x)
+    model_different_activation = UNetDifferentActivation(in_channels=8, out_channels=1, init_features=64, activation=nn.LeakyReLU)
+    output = model_different_activation(x)
     print(f"Input shape: {x.shape}")
     print(f"Output shape: {output.shape}")
