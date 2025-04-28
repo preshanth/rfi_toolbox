@@ -117,9 +117,7 @@ class UNetBigger(nn.Module):
         # Final convolution
         return self.final_conv(dec1)
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
+
 
 class DoubleConvOverfit(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -198,6 +196,67 @@ class UNetOverfit(nn.Module):
 
         # Final convolution and activation
         return self.sigmoid(self.final_conv(dec1))
+
+class DoubleConvDifferentActivation(nn.Module):
+    def __init__(self, in_channels, out_channels, activation=nn.ReLU):
+        super().__init__()
+        self.conv = nn.Sequential(
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            activation(inplace=True),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
+            activation(inplace=True)
+        )
+
+    def forward(self, x):
+        return self.conv(x)
+
+class EncoderDifferentActivation(nn.Module):
+    def __init__(self, in_channels, features, activation=nn.ReLU):
+        super().__init__()
+        self.conv = DoubleConvDifferentActivation(in_channels, features, activation)
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2)
+
+    def forward(self, x):
+        return self.pool(self.conv(x)), self.conv(x)
+
+class DecoderDifferentActivation(nn.Module):
+    def __init__(self, in_channels, features, activation=nn.ReLU):
+        super().__init__()
+        self.up = nn.ConvTranspose2d(in_channels, features, kernel_size=2, stride=2)
+        self.conv = DoubleConvDifferentActivation(in_channels, features, activation)
+
+    def forward(self, x, skip):
+        up = self.up(x)
+        concat = torch.cat([up, skip], dim=1)
+        return self.conv(concat)
+
+class UNetDifferentActivation(nn.Module):
+    def __init__(self, in_channels=1, out_channels=1, init_features=32, activation=nn.ReLU):
+        super().__init__()
+        features = init_features
+        self.encoder1 = EncoderDifferentActivation(in_channels, features, activation)
+        # ... (rest of the encoders and decoders with the new activation)
+        self.bottleneck = DoubleConvDifferentActivation(features * 8, features * 16, activation)
+        # ... (rest of the decoders)
+        self.final_conv = nn.Conv2d(features, out_channels, kernel_size=1)
+
+    def forward(self, x):
+        # Encoder
+        enc1_pool, enc1 = self.encoder1(x)
+        # Add the rest of the encoder layers here
+        # Example: enc2_pool, enc2 = self.encoder2(enc1_pool)
+
+        # Bottleneck
+        bottleneck = self.bottleneck(enc1_pool)  # Adjust based on the encoder layers
+
+        # Decoder
+        # Add the decoder layers here
+        # Example: dec1 = self.decoder1(bottleneck, enc1)
+
+        # Final convolution
+        return self.final_conv(bottleneck)  # Adjust based on the decoder layers
 
 if __name__ == '__main__':
     # Example usage:
