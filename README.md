@@ -29,17 +29,17 @@ generate_rfi_dataset [options]
 ```
 Options
 
-- `--samples_training <integer>`: Number of training samples to generate (default: 1000).
-- `--samples_validation <integer>`: Number of validation samples to generate (default: 200).
-- `--output_dir <path>`: Output directory for the generated dataset (default: `rfi_dataset`).
-- `--time_bins <integer>`: Number of time bins in the TF plane (default: 1024).
-- `--frequency_bins <integer>`: Number of frequency bins in the TF plane (default: 1024).
-- `--generate_mask`: Flag to enable the generation of RFI masks (default: `True`).
-- `--no_generate_mask`: Flag to disable the generation of RFI masks.
-- `--use_ms`: Flag to enable loading data from a Measurement Set.
-- `--ms_name <path>`: Path to the Measurement Set. Required if `--use_ms` is set.
-- `--train_field <integer>`: `FIELD_ID` to use for the training set when loading from an MS.
-- `--val_field <integer>`: `FIELD_ID` to use for the validation set when loading from an MS.
+ `--samples_training <integer>`: Number of training samples to generate (default: 1000).
+ `--samples_validation <integer>`: Number of validation samples to generate (default: 200).
+ `--output_dir <path>`: Output directory for the generated dataset (default: `rfi_dataset`).
+ `--time_bins <integer>`: Number of time bins in the TF plane (default: 1024).
+ `--frequency_bins <integer>`: Number of frequency bins in the TF plane (default: 1024).
+ `--generate_mask`: Flag to enable the generation of RFI masks (default: `True`).
+ `--no_generate_mask`: Flag to disable the generation of RFI masks.
+ `--use_ms`: Flag to enable loading data from a Measurement Set.
+ `--ms_name <path>`: Path to the Measurement Set. Required if `--use_ms` is set.
+ `--train_field <integer>`: `FIELD_ID` to use for the training set when loading from an MS.
+ `--val_field <integer>`: `FIELD_ID` to use for the validation set when loading from an MS.
 
 ### Generating Synthetic Data
 
