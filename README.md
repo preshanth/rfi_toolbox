@@ -7,6 +7,7 @@ This Python package provides tools for generating synthetic Radio Frequency Inte
 To install the RFI Toolbox, navigate to the directory containing the `setup.py` file and run:
 
 ```bash
+
 pip install .
 ```
 or for development purposes:
@@ -23,26 +24,30 @@ Generating the Dataset
 The `generate_rfi_dataset` script is used to generate synthetic RFI datasets or create datasets from Measurement Sets (MS) as NumPy `.npy` files.
 
 ```bash
+
 generate_rfi_dataset [options]
 ```
+Options
 
-Options:
-    --samples_training <integer>: Number of training samples to generate (default: 1000).
-    --samples_validation <integer>: Number of validation samples to generate (default: 200).
-    --output_dir<path>: Output directory for the generated dataset (default: rfi_dataset).
-    --time_bins<integer>: Number of time bins in the TF plane (default: 1024).
-    --frequency_bins <integer>: Number of frequency bins in the TF plane (default: 1024).
-    --generate_mask: Flag to enable the generation of RFI masks (default: True).
-    --no_generate_mask: Flag to disable the generation of RFI masks.
-    --use_ms: Flagto enable loading data from a Measurement Set.
-    --ms_name <path: Path to the Measurement Set. Required if --use_ms is set.
-    --train_field <integer>:  FIELD_ID to use for the training set when loading from an MS.
-    --val_field`<integer>: FIELD_ID to use for the validation set when loading from an MS.
+- `--samples_training <integer>`: Number of training samples to generate (default: 1000).
+- `--samples_validation <integer>`: Number of validation samples to generate (default: 200).
+- `--output_dir <path>`: Output directory for the generated dataset (default: `rfi_dataset`).
+- `--time_bins <integer>`: Number of time bins in the TF plane (default: 1024).
+- `--frequency_bins <integer>`: Number of frequency bins in the TF plane (default: 1024).
+- `--generate_mask`: Flag to enable the generation of RFI masks (default: `True`).
+- `--no_generate_mask`: Flag to disable the generation of RFI masks.
+- `--use_ms`: Flag to enable loading data from a Measurement Set.
+- `--ms_name <path>`: Path to the Measurement Set. Required if `--use_ms` is set.
+- `--train_field <integer>`: `FIELD_ID` to use for the training set when loading from an MS.
+- `--val_field <integer>`: `FIELD_ID` to use for the validation set when loading from an MS.
 
 ### Generating Synthetic Data
+
 ```bash
+
 generate_rfi_dataset --samples_training 5000 --samples_validation 1000 --output_dir my_rfi_data --time_bins 512 --frequency_bins 512
 ```
+
 This command will generate 5000 training samples and 1000 validation samples, with a TF plane size of 512x512, and save the dataset to the my_rfi_data directory.
 
 ### Loading Data from a Measurement Set
