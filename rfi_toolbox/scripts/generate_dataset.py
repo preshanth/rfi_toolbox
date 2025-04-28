@@ -136,20 +136,20 @@ class RFIMaskDataset(Dataset):
         if self.field_selection is not None:
             if isinstance(self.field_selection, int):
                 field_ids = [self.field_selection]
+                self.tb = self.tb.query(f'FIELD_ID == {self.field_selection}')  # Corrected line
             else:
                 field_ids = self.field_selection
-            logging.info(f"Selecting FIELD_IDs: {field_ids}")
-            self.tb = self.tb.query(f'FIELD_ID IN {tuple(field_ids)}')
+                self.tb = self.tb.query(f'FIELD_ID IN {tuple(field_ids)}') # Corrected line
 
-        num_rows = self.tb.nrows() # Get the number of rows in the table
+        num_rows = self.tb.nrows()
         logging.info(f"Processing {num_rows} rows from MS...")
-        for row_num in tqdm(range(num_rows), desc="Processing MS Rows"): # Use tqdm
+        for row_num in tqdm(range(num_rows), desc="Processing MS Rows"):
             row = self.tb[row_num]
             antenna1 = row['ANTENNA1']
             antenna2 = row['ANTENNA2']
-            field_id = row['FIELD_ID'] # get field ID
+            field_id = row['FIELD_ID']
 
-            # Skip if field is not selected.
+            # Skip if field is not selected
             if self.field_selection is not None:
                 if isinstance(self.field_selection, int):
                     if field_id != self.field_selection:
@@ -231,7 +231,7 @@ def main():
     parser.add_argument("--time_bins", type=int, default=1024, help="Number of time bins in the TF plane.")
     parser.add_argument("--frequency_bins", type=int, default=1024, help="Number of frequency bins in the TF plane.")
     parser.add_argument("--generate_mask", action='store_true', default=True, help="Generate RFI masks.")
-    parser.add_argument("--no_mask", action='store_false', dest='generate_mask', help="Disable mask generation.")
+    parser.add_argument("--no_generate_mask", action='store_false', dest='generate_mask', help="Disable mask generation.")
     parser.add_argument("--use_ms", action='store_true', default=False, help="Load data from a Measurement Set.")
     parser.add_argument("--ms_name", type=str, default=None, help="Path to the Measurement Set.")
     parser.add_argument("--train_field", type=int, help="FIELD_ID to use for training set.")
