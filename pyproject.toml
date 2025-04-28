@@ -19,7 +19,8 @@ dependencies = [
     "bokeh",
     "scikit-learn",
     "scipy",
-    "albumentations"
+    "albumentations",
+    "python-casacore"
 ]
 
 [project.scripts]

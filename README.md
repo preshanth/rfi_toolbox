@@ -20,29 +20,38 @@ This will install the necessary dependencies (numpy, matplotlib, tqdm, torch, bo
 This will install the necessary dependencies (numpy, matplotlib, tqdm, torch, bokeh) and make the command-line scripts generate_rfi_dataset, evaluate_rfi_model, and visualize_rfi_data available.
 Generating the Dataset
 
-The generate_rfi_dataset script is used to create synthetic RFI datasets as NumPy .npy files.
+The `generate_rfi_dataset` script is used to generate synthetic RFI datasets or create datasets from Measurement Sets (MS) as NumPy `.npy` files.
 
 ```bash
-
 generate_rfi_dataset [options]
 ```
-Options
 
-    `--samples_training` <integer>: Number of training samples to generate (default: 1000).
-    `--samples_validation` <integer>: Number of validation samples to generate (default: 200).
-    `--output_dir` <path>: Output directory for the generated dataset (default: rfi_dataset).
-    `--time_bins` <integer>: Number of time bins in the TF plane (default: 1024).
-    `--frequency_bins` <integer>: Number of frequency bins in the TF plane (default: 1024).
-    `--generate_mask`: Flag to enable the generation of RFI masks (default: True).
-    `--no_generate_mask`: Flag to disable the generation of RFI masks.
+Options:
+`--samples_training` <integer>: Number of training samples to generate (default: 1000).
+`--samples_validation` <integer>: Number of validation samples to generate (default: 200).
+`--output_dir` <path>: Output directory for the generated dataset (default: rfi_dataset).
+`--time_bins` <integer>: Number of time bins in the TF plane (default: 1024).
+`--frequency_bins` <integer>: Number of frequency bins in the TF plane (default: 1024).
+`--generate_mask`: Flag to enable the generation of RFI masks (default: True).
+`--no_generate_mask`: Flag to disable the generation of RFI masks.
+`--use_ms`: Flag to enable loading data from a Measurement Set.
+`--ms_name` <path>: Path to the Measurement Set. Required if --use_ms is set.
+`--train_field` <integer>:  FIELD_ID to use for the training set when loading from an MS.
+`--val_field` <integer>: FIELD_ID to use for the validation set when loading from an MS.
 
-Example
+### Generating Synthetic Data
 ```bash
-
 generate_rfi_dataset --samples_training 5000 --samples_validation 1000 --output_dir my_rfi_data --time_bins 512 --frequency_bins 512
 ```
+This command will generate 5000 training samples and 1000 validation samples, with a TF plane size of 512x512, and save the dataset to the my_rfi_data directory.
 
-Training the Model
+### Loading Data from a Measurement Set
+```bash
+generate_rfi_dataset --use_ms --ms_name /path/to/your/data.ms --output_dir ms_data --train_field 0 --val_field 1
+```
+This command will load data from the specified Measurement Set (`data.ms`).  It will create a dataset in the `ms_data` directory.  The data corresponding to `FIELD_ID=0` will be used for the training set, and `FIELD_ID=1` will be used for the validation set.
+
+### Training the Model
 
 The train_rfi_model script is used to train the UNet model for RFI masking.
 
@@ -52,21 +61,21 @@ train_rfi_model [options]
 ```
 Options
 
-    --train_dir <path>: Path to the training data directory (default: rfi_dataset/train).
-    --val_dir <path>: Path to the validation data directory (default: rfi_dataset/val).
-    --batch_size <int>: Batch size for training (default: 4).
-    --num_epochs <int>: Number of training epochs (default: 50).
-    --lr <float>: Learning rate (default: 1e-4).
-    --device <str>: Device to use (cuda or cpu, default: cuda if available).
-    --checkpoint_dir <path>: Directory to save model checkpoints (default: checkpoints).
-    --in_channels <int>: Number of input channels to the UNet (default: 8).
+    `--train_dir` <path>: Path to the training data directory (default: rfi_dataset/train).
+    `--val_dir` <path>: Path to the validation data directory (default: rfi_dataset/val).
+    `--batch_size` <int>: Batch size for training (default: 4).
+    `--num_epochs` <int>: Number of training epochs (default: 50).
+    `--lr` <float>: Learning rate (default: 1e-4).
+    `--device` <str>: Device to use (cuda or cpu, default: cuda if available).
+    `--checkpoint_dir` <path>: Directory to save model checkpoints (default: checkpoints).
+    `--in_channels` <int>: Number of input channels to the UNet (default: 8).
 
 Example
 ```bash
 
 train_rfi_model --train_dir my_rfi_data/train --val_dir my_rfi_data/val --num_epochs 100 --batch_size 8 --lr 5e-5 --device cuda
 ```
-Evaluating the Model
+### Evaluating the Model
 
 The evaluate_rfi_model script evaluates a trained model on a validation dataset.
 
@@ -90,7 +99,7 @@ Example
 
 evaluate_rfi_model --model_path checkpoints/unet_rfi_latest.pt --dataset_dir my_rfi_data/val --batch_size 16 --device cuda
 ```
-Interactive Visualization
+### Interactive Visualization
 
 The visualize_rfi_data script provides an interactive Bokeh dashboard to visualize a random subset of the validation dataset and, optionally, model predictions.
 
