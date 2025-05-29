@@ -6,6 +6,10 @@ from torch.utils.data import Dataset
 from sklearn.preprocessing import RobustScaler
 import logging
 from tqdm import tqdm
+
+from rfi_toolbox.core.simulator import RFISimulator
+
+
 try:
     import casacore.tables as ct  # Import here
     use_casacore = True
