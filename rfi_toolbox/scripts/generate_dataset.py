@@ -10,8 +10,11 @@ try:
     import casacore.tables as ct  # Import here
     use_casacore = True
 except ImportError:
-    from casatools import table
-    use_casacore = False
+    try:
+        from casatools import table
+        use_casacore = False
+    except ImportError:
+        raise ImportError("Please install casacore or casatools to use this script.")
 
 class RFIMaskDataset(Dataset):
     def __init__(self, data_dir, transform=None, normalization='global_min_max', use_ms=False, ms_name=None, field_selection=None):
