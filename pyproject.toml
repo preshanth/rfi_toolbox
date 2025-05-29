@@ -20,7 +20,8 @@ dependencies = [
     "scikit-learn",
     "scipy",
     "albumentations",
-    "python-casacore"
+    "python-casacore; sys_platform != 'darwin'",
+    "casatools; sys_platform == 'darwin'",
 ]
 
 [project.scripts]
