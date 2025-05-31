@@ -6,7 +6,19 @@ from torch.utils.data import Dataset
 from sklearn.preprocessing import RobustScaler
 import logging
 from tqdm import tqdm
-import casacore.tables as ct  # Import here
+
+from rfi_toolbox.core.simulator import RFISimulator
+
+
+try:
+    import casacore.tables as ct  # Import here
+    use_casacore = True
+except ImportError:
+    try:
+        from casatools import table
+        use_casacore = False
+    except ImportError:
+        raise ImportError("Please install casacore or casatools to use this script.")
 
 class RFIMaskDataset(Dataset):
     def __init__(self, data_dir, transform=None, normalization='global_min_max', use_ms=False, ms_name=None, field_selection=None):
@@ -36,7 +48,11 @@ class RFIMaskDataset(Dataset):
         if use_ms:
             if not ms_name:
                 raise ValueError("ms_name must be provided when use_ms is True")
-            self.tb = ct.table(ms_name, readonly=True)
+            if use_casacore:
+                self.tb = ct.table(ms_name, readonly=True)
+            else:
+                tb = table()
+                self.tb = tb.open(ms_name, readonly=True)
             self.num_antennas = self.tb.getcol('ANTENNA1').max() + 1
             self.spw_array = np.unique(self.tb.getcol('DATA_DESC_ID'))
 
