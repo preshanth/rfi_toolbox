@@ -7,23 +7,47 @@ name = "rfi_toolbox"
 version = "0.2.0"
 description = "Universal foundation for ML-based RFI detection in radio astronomy"
 readme = "README.md"
-license = { text = "GNU GPLv3" }
+license = "GPL-3.0-or-later"
 authors = [
     { name = "Preshanth Jagannathan", email = "pjaganna@nrao.edu" }
 ]
 dependencies = [
     "numpy",
-    "matplotlib",
-    "tqdm",
-    "torch >= 1.9.0",
-    "bokeh",
-    "scikit-learn",
     "scipy",
-    "albumentations",
+    "tqdm",
     "pyyaml",
-    "patchify",
+]
+
+[project.optional-dependencies]
+# Visualization tools
+viz = [
+    "bokeh >= 2.4.0",
+    "matplotlib >= 3.0.0",
+]
+
+# Training and ML operations
+training = [
+    "torch >= 1.9.0",
+    "scikit-learn >= 0.24.0",
+]
+
+# CASA tools for Measurement Set I/O
+casa = [
     "python-casacore; sys_platform != 'darwin'",
     "casatools; sys_platform == 'darwin'",
+]
+
+# Development tools
+dev = [
+    "pytest >= 7.0.0",
+    "pytest-cov >= 4.0.0",
+    "black >= 23.0.0",
+    "ruff >= 0.1.0",
+]
+
+# Everything (for convenience)
+all = [
+    "rfi_toolbox[viz,training,casa,dev]",
 ]
 
 [project.scripts]
@@ -32,3 +56,9 @@ train_rfi_model = "rfi_toolbox.scripts.train_model:main"
 evaluate_rfi_model = "rfi_toolbox.scripts.evaluate_model:main"
 visualize_rfi_data = "rfi_toolbox.visualization.visualize:main"
 normalize_rfi_data = "rfi_toolbox.scripts.normalize_rfi_data:main"
+
+[tool.setuptools]
+packages = ["rfi_toolbox"]
+
+[tool.setuptools.package-data]
+rfi_toolbox = ["py.typed"]

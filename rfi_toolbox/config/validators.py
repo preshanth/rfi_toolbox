@@ -7,7 +7,7 @@ before expensive operations like training or data generation.
 
 from pathlib import Path
 
-from samrfi.utils.errors import ConfigValidationError
+from ..utils.errors import ConfigValidationError
 
 
 def validate_preprocessing_config(config):

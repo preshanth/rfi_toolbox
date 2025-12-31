@@ -2,8 +2,8 @@
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
-from rfi_toolbox.scripts.generate_dataset import RFIMaskDataset  # Adjust import path
-from rfi_toolbox.models.unet import UNet  # Adjust import path
+from rfi_toolbox.datasets import RFIMaskDataset
+from rfi_toolbox.models.unet import UNet
 from bokeh.plotting import figure, show
 from bokeh.layouts import column, row
 from bokeh.models import Slider, ColumnDataSource, Button

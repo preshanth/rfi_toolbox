@@ -1,2 +1,15 @@
-#rfi_toolbox/core/__init__.py
-# This module provides rfi simulation functionalities for the RFI Toolbox.
+"""
+Core RFI simulation functionality.
+
+Provides physics-based RFI simulators for generating realistic training data.
+
+Example:
+    from rfi_toolbox.core import RFISimulator
+
+    simulator = RFISimulator()
+    data, mask = simulator.generate()
+"""
+
+from .simulator import RFISimulator
+
+__all__ = ["RFISimulator"]

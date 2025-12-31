@@ -4,22 +4,85 @@ This Python package provides tools for generating synthetic Radio Frequency Inte
 
 ## Installation
 
-To install the RFI Toolbox, navigate to the directory containing the `setup.py` file and run:
+### Basic Installation (Core only)
 
 ```bash
-
 pip install .
 ```
-or for development purposes:
+
+### With Optional Dependencies
 
 ```bash
+# With training/ML tools
+pip install .[training]
 
-pip install -e .
+# With CASA support for Measurement Sets
+pip install .[casa]
+
+# With visualization
+pip install .[viz]
+
+# Everything (recommended for development)
+pip install .[all]
 ```
 
-This will install the necessary dependencies (numpy, matplotlib, tqdm, torch, bokeh) and make the command-line script generate_rfi_dataset available.
-This will install the necessary dependencies (numpy, matplotlib, tqdm, torch, bokeh) and make the command-line scripts generate_rfi_dataset, evaluate_rfi_model, and visualize_rfi_data available.
-Generating the Dataset
+**Optional dependency groups:**
+- `training`: PyTorch, scikit-learn, albumentations, patchify
+- `casa`: python-casacore (Linux) or casatools (macOS)
+- `viz`: Bokeh, matplotlib
+- `dev`: pytest, black, ruff, pytest-cov
+- `all`: All of the above
+
+---
+
+## Quick Start
+
+### For ML Researchers: Library Usage
+
+**Use rfi_toolbox as a foundation for your custom RFI detection models:**
+
+```python
+from rfi_toolbox.io import MSLoader
+from rfi_toolbox.preprocessing import Preprocessor
+from rfi_toolbox.evaluation import evaluate_segmentation
+
+# 1. Load Measurement Set data
+loader = MSLoader('observation.ms')
+loader.load(num_antennas=10, mode='DATA')
+
+# 2. Preprocess into ML-ready patches
+preprocessor = Preprocessor(loader.data, flags=loader.load_flags())
+dataset = preprocessor.create_dataset(patch_size=128, stretch='SQRT')
+
+# 3. Run your custom model
+def my_rfi_detector(data):
+    # Your ML model here (PyTorch, JAX, TensorFlow, etc.)
+    return predicted_mask
+
+predictions = my_rfi_detector(dataset['data'])
+
+# 4. Evaluate results
+metrics = evaluate_segmentation(predictions, dataset['labels'])
+print(f"IoU: {metrics['iou']:.3f}, F1: {metrics['f1']:.3f}")
+
+# 5. Save flags back to MS
+loader.save_flags(predictions, column='FLAG')
+```
+
+**Key modules:**
+- `rfi_toolbox.io` - Measurement Set I/O
+- `rfi_toolbox.preprocessing` - Patchification, normalization, augmentation
+- `rfi_toolbox.evaluation` - Segmentation metrics (IoU, F1, Dice, Precision, Recall)
+- `rfi_toolbox.data_generation` - Synthetic RFI generation
+- `rfi_toolbox.datasets` - PyTorch dataset loaders
+
+**📖 Full API documentation:** See [`docs/API.md`](docs/API.md)
+
+---
+
+### For End Users: Command-Line Tools
+
+## Generating the Dataset
 
 The `generate_rfi_dataset` script is used to generate synthetic RFI datasets or create datasets from Measurement Sets (MS) as NumPy `.npy` files.
 
