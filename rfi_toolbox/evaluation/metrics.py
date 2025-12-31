@@ -6,12 +6,18 @@ Accepts both torch tensors and numpy arrays (converts to numpy internally).
 """
 
 import numpy as np
-import torch
+
+# Optional torch support
+try:
+    import torch
+    HAS_TORCH = True
+except ImportError:
+    HAS_TORCH = False
 
 
 def _to_numpy(arr):
     """Convert torch tensor or numpy array to numpy array"""
-    if isinstance(arr, torch.Tensor):
+    if HAS_TORCH and isinstance(arr, torch.Tensor):
         return arr.detach().cpu().numpy()
     return np.asarray(arr)
 
