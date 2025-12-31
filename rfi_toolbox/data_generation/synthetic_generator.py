@@ -9,8 +9,6 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from rfi_toolbox.preprocessing import Preprocessor
-
 # Global generator instance for multiprocessing workers
 _global_generator = None
 _global_proc_config = None
@@ -91,6 +89,7 @@ def _worker_generate_and_preprocess(**gen_kwargs):
         dataset = RawPatchDataset(complex_patches, masks)
     else:
         # Preprocess with augmentation (original behavior)
+        from rfi_toolbox.preprocessing import Preprocessor
         preprocessor = Preprocessor(waterfall, flags=exact_mask)
         dataset = preprocessor.create_dataset(
             patch_size=_global_proc_config.get("patch_size", 128),
@@ -353,6 +352,7 @@ class SyntheticDataGenerator:
                             dataset = RawPatchDataset(complex_patches, masks)
                         else:
                             # Preprocess (original behavior)
+                            from rfi_toolbox.preprocessing import Preprocessor
                             preprocessor = Preprocessor(waterfall, flags=exact_mask)
                             dataset = preprocessor.create_dataset(
                                 patch_size=proc_config.get("patch_size", 128),
