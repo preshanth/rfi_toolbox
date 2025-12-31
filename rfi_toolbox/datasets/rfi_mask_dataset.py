@@ -11,9 +11,13 @@ import os
 
 import numpy as np
 import torch
-from sklearn.preprocessing import RobustScaler
 from torch.utils.data import Dataset
 from tqdm import tqdm
+
+try:
+    from sklearn.preprocessing import RobustScaler
+except ImportError:
+    RobustScaler = None
 
 try:
     import casacore.tables as ct
@@ -112,8 +116,15 @@ class RFIMaskDataset(Dataset):
         all_data_np = np.concatenate([d.flatten() for d in all_data])
         self.mean = np.mean(all_data_np)
         self.std = np.std(all_data_np) + 1e-8
-        all_data_reshaped = all_data_np.reshape(-1, 1)
-        self.robust_scaler = RobustScaler().fit(all_data_reshaped)
+
+        if self.normalization == "robust_scale":
+            if RobustScaler is None:
+                raise ImportError(
+                    "RobustScaler requires scikit-learn. "
+                    "Install with: pip install rfi_toolbox[training]"
+                )
+            all_data_reshaped = all_data_np.reshape(-1, 1)
+            self.robust_scaler = RobustScaler().fit(all_data_reshaped)
 
     def __len__(self):
         return len(self.sample_dirs)
