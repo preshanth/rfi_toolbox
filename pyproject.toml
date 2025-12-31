@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rfi_toolbox"
-version = "0.1.0"
-description = "A toolbox for RFI-related AI tasks"
+version = "0.2.0"
+description = "Universal foundation for ML-based RFI detection in radio astronomy"
 readme = "README.md"
 license = { text = "GNU GPLv3" }
 authors = [
@@ -20,6 +20,8 @@ dependencies = [
     "scikit-learn",
     "scipy",
     "albumentations",
+    "pyyaml",
+    "patchify",
     "python-casacore; sys_platform != 'darwin'",
     "casatools; sys_platform == 'darwin'",
 ]
