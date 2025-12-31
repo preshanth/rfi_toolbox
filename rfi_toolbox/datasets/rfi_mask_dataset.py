@@ -15,11 +15,6 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 try:
-    from sklearn.preprocessing import RobustScaler
-except ImportError:
-    RobustScaler = None
-
-try:
     import casacore.tables as ct
 
     use_casacore = True
@@ -61,7 +56,8 @@ class RFIMaskDataset(Dataset):
         self.global_max = -np.inf
         self.mean = None
         self.std = None
-        self.robust_scaler = None
+        self.robust_median = None
+        self.robust_iqr = None
         self.sample_dirs = []
         self.field_selection = field_selection
 
@@ -118,13 +114,11 @@ class RFIMaskDataset(Dataset):
         self.std = np.std(all_data_np) + 1e-8
 
         if self.normalization == "robust_scale":
-            if RobustScaler is None:
-                raise ImportError(
-                    "RobustScaler requires scikit-learn. "
-                    "Install with: pip install rfi_toolbox[training]"
-                )
-            all_data_reshaped = all_data_np.reshape(-1, 1)
-            self.robust_scaler = RobustScaler().fit(all_data_reshaped)
+            # Robust scaling: median centering + IQR scaling (pure numpy)
+            self.robust_median = np.median(all_data_np)
+            q25 = np.percentile(all_data_np, 25)
+            q75 = np.percentile(all_data_np, 75)
+            self.robust_iqr = q75 - q25 + 1e-8  # avoid division by zero
 
     def __len__(self):
         return len(self.sample_dirs)
@@ -158,10 +152,7 @@ class RFIMaskDataset(Dataset):
         elif self.normalization == "standardize":
             return (input_np - self.mean) / self.std
         elif self.normalization == "robust_scale":
-            original_shape = input_np.shape
-            input_reshaped = input_np.reshape(-1, 1)
-            input_scaled = self.robust_scaler.transform(input_reshaped)
-            return input_scaled.reshape(original_shape)
+            return (input_np - self.robust_median) / self.robust_iqr
         else:
             return input_np
 
