@@ -16,6 +16,7 @@ from .metrics import (
 from .statistics import (
     compute_statistics,
     compute_ffi,
+    compute_calcquality,
     print_statistics_comparison,
 )
 
@@ -28,5 +29,6 @@ __all__ = [
     "evaluate_segmentation",
     "compute_statistics",
     "compute_ffi",
+    "compute_calcquality",
     "print_statistics_comparison",
 ]

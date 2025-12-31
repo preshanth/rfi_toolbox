@@ -4,6 +4,7 @@ Preprocessor - Convert waterfall data to training-ready patches
 Clean rewrite of RFIDataset preprocessing pipeline.
 """
 
+import logging
 from functools import partial
 from multiprocessing import Pool, cpu_count
 
@@ -12,9 +13,10 @@ import torch
 from patchify import patchify
 from scipy import stats
 
-from samrfi.utils import logger
-
 from ..datasets.batched_dataset import TorchDataset
+
+# Setup logger for this module
+logger = logging.getLogger(__name__)
 
 
 # Standalone functions for multiprocessing (must be picklable)
