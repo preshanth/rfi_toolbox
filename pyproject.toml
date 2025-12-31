@@ -58,7 +58,7 @@ visualize_rfi_data = "rfi_toolbox.visualization.visualize:main"
 normalize_rfi_data = "rfi_toolbox.scripts.normalize_rfi_data:main"
 
 [tool.setuptools]
-packages = ["rfi_toolbox"]
+packages = {find = {}}
 
 [tool.setuptools.package-data]
 rfi_toolbox = ["py.typed"]
