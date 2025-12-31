@@ -25,17 +25,22 @@ __version__ = "0.2.0"
 __author__ = "Preshanth Jagannathan"
 __email__ = "pjaganna@nrao.edu"
 
-# Core modules (minimal dependencies - numpy, scipy, tqdm, pyyaml only)
-from . import utils
-from . import evaluation
-from . import config
-from . import data_generation
-
-# Optional modules (lazy import to avoid requiring optional dependencies)
-# These will raise ImportError with helpful message if dependencies missing
+# All modules use lazy import to avoid circular dependencies
 def __getattr__(name):
-    """Lazy import for optional modules."""
-    if name == "io":
+    """Lazy import for all modules."""
+    if name == "utils":
+        from . import utils
+        return utils
+    elif name == "evaluation":
+        from . import evaluation
+        return evaluation
+    elif name == "config":
+        from . import config
+        return config
+    elif name == "data_generation":
+        from . import data_generation
+        return data_generation
+    elif name == "io":
         from . import io
         return io
     elif name == "preprocessing":
