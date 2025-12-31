@@ -18,13 +18,19 @@ try:
     import casacore.tables as ct
 
     use_casacore = True
+    CASA_AVAILABLE = True
 except ImportError:
     try:
         from casatools import table
 
         use_casacore = False
+        CASA_AVAILABLE = True
     except ImportError:
-        raise ImportError("Please install casacore or casatools to use this script.")
+        # CASA not available - class will fail at instantiation if use_ms=True
+        ct = None
+        table = None
+        use_casacore = False
+        CASA_AVAILABLE = False
 
 
 class RFIMaskDataset(Dataset):
@@ -64,6 +70,11 @@ class RFIMaskDataset(Dataset):
         if use_ms:
             if not ms_name:
                 raise ValueError("ms_name must be provided when use_ms is True")
+            if not CASA_AVAILABLE:
+                raise ImportError(
+                    "CASA is required for use_ms=True but is not installed.\n"
+                    "Install with: pip install python-casacore  OR  pip install casatools"
+                )
             if use_casacore:
                 self.tb = ct.table(ms_name, readonly=True)
             else:
