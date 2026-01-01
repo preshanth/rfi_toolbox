@@ -5,6 +5,7 @@ Clean rewrite of RFIDataset preprocessing pipeline.
 """
 
 import logging
+import os
 from functools import partial
 from multiprocessing import Pool, cpu_count
 
@@ -487,6 +488,10 @@ class Preprocessor:
         Returns:
             Tuple: (patches_array, original_shapes)
         """
+        # Disable multiprocessing in CI to avoid pickle issues with spawn mode
+        if os.environ.get("CI"):
+            num_workers = 0
+
         if num_workers and num_workers != 0:
             # Parallel processing
             n_workers = cpu_count() if num_workers == -1 else num_workers
@@ -713,6 +718,10 @@ class Preprocessor:
         Returns:
             Boolean flag array
         """
+        # Disable multiprocessing in CI to avoid pickle issues with spawn mode
+        if os.environ.get("CI"):
+            num_workers = 0
+
         if num_workers and num_workers != 0:
             # Parallel processing
             n_workers = cpu_count() if num_workers == -1 else num_workers
@@ -941,6 +950,10 @@ class GPUPreprocessor:
         Returns:
             List of patches
         """
+        # Disable multiprocessing in CI to avoid pickle issues with spawn mode
+        if os.environ.get("CI"):
+            num_workers = 0
+
         if num_workers and num_workers > 0:
             n_workers = min(num_workers, cpu_count())
             with Pool(n_workers) as pool:
