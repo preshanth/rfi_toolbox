@@ -435,13 +435,13 @@ class Preprocessor:
 
                 if num_rotations >= 2:
                     # Flip vertical
-                    augmented.append(np.flip(pol, axis=0))
+                    augmented.append(np.flip(pol, axis=0).copy())
 
                 if num_rotations >= 4:
                     # Transpose
                     augmented.append(pol.T)
                     # Transpose + flip
-                    augmented.append(np.flip(pol.T, axis=0))
+                    augmented.append(np.flip(pol.T, axis=0).copy())
 
         return augmented
 
@@ -468,12 +468,11 @@ class Preprocessor:
                 # Original
                 augmented.append(pol)
                 # Flip vertical
-                augmented.append(np.flip(pol, axis=0))
+                augmented.append(np.flip(pol, axis=0).copy())
                 # Transpose
                 augmented.append(pol.T)
                 # Transpose + flip
-                augmented.append(np.flip(pol.T, axis=0))
-
+                augmented.append(np.flip(pol.T, axis=0).copy())
         return augmented
 
     def _create_patches(self, data_list, patch_size, num_workers=None):
@@ -744,16 +743,18 @@ class Preprocessor:
                 flags.append(flag)
 
         return np.array(flags, dtype=bool)
-
     def _remove_blank_patches(self):
-        """Remove patches where flag mask is entirely False."""
-        # Find patches with at least one flag
-        has_flags = np.array([flags.any() for flags in self.patch_flags])
+          """Remove patches where flag mask is entirely False."""
+          # Find patches with at least one flag
+          has_flags = np.array([flags.any() for flags in self.patch_flags])
 
-        # Filter
-        self.patches = self.patches[has_flags]
-        self.patch_flags = self.patch_flags[has_flags]
-
+          # Only filter if we have some flagged patches (avoid empty dataset)
+          if has_flags.any():
+              self.patches = self.patches[has_flags]
+              self.patch_flags = self.patch_flags[has_flags]
+          else:
+              logger.warning("No flagged patches found - keeping all patches")
+              
     def _shuffle(self):
         """Shuffle patches and flags in unison."""
         indices = np.random.permutation(len(self.patches))
