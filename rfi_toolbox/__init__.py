@@ -25,9 +25,12 @@ __version__ = "0.2.0"
 __author__ = "Preshanth Jagannathan"
 __email__ = "pjaganna@nrao.edu"
 
-# All modules use lazy import to avoid circular dependencies
+# Eager imports (required for multiprocessing pickle compatibility)
+from . import datasets, preprocessing
+
+# Lazy imports for other modules to avoid circular dependencies
 def __getattr__(name):
-    """Lazy import for all modules."""
+    """Lazy import for optional modules."""
     if name == "utils":
         from . import utils
         return utils
@@ -43,12 +46,6 @@ def __getattr__(name):
     elif name == "io":
         from . import io
         return io
-    elif name == "preprocessing":
-        from . import preprocessing
-        return preprocessing
-    elif name == "datasets":
-        from . import datasets
-        return datasets
     elif name == "models":
         from . import models
         return models
