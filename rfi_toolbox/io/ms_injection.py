@@ -5,18 +5,26 @@ This module allows injecting synthetic RFI data into existing measurement sets
 for benchmarking RFI detection methods against traditional CASA flagging methods.
 """
 
+print("[DEBUG ms_injection] Starting ms_injection module import")
+
 import shutil
 from pathlib import Path
 
 import numpy as np
 from tqdm import tqdm
 
+print("[DEBUG ms_injection] Basic imports complete")
+
+print("[DEBUG ms_injection] Attempting casatools import")
 try:
     from casatools import table
-
+    print("[DEBUG ms_injection] casatools.table imported successfully")
     CASA_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    print(f"[DEBUG ms_injection] casatools import failed: {e}")
     CASA_AVAILABLE = False
+
+print("[DEBUG ms_injection] ms_injection module import complete")
 
 
 def inject_synthetic_data(
