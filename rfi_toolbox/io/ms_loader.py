@@ -8,6 +8,7 @@ print("[DEBUG ms_loader] Starting ms_loader module import")
 
 import numpy as np
 from tqdm import tqdm
+import gc
 
 print("[DEBUG ms_loader] numpy and tqdm imported")
 
@@ -339,6 +340,11 @@ class MSLoader:
         """Close the measurement set."""
         if hasattr(self, "tb"):
             self.tb.close()
+        if hasattr(self, "data"):
+            del self.data
+        if hasattr(self, "flags"):
+            del self.flags
+        gc.collect()    
 
     def __del__(self):
         """Ensure MS is closed on deletion."""
