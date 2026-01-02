@@ -33,8 +33,8 @@ training = [
 
 # CASA tools for Measurement Set I/O
 casa = [
-    "python-casacore; sys_platform != 'darwin'",
-    "casatools; sys_platform == 'darwin'",
+    "casatools>=6.5.0",
+    "casatasks>=6.5.0",
 ]
 
 # Development tools

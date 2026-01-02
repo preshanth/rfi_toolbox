@@ -15,22 +15,12 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 try:
-    import casacore.tables as ct
-
-    use_casacore = True
+    from casatools import table
     CASA_AVAILABLE = True
 except ImportError:
-    try:
-        from casatools import table
-
-        use_casacore = False
-        CASA_AVAILABLE = True
-    except ImportError:
-        # CASA not available - class will fail at instantiation if use_ms=True
-        ct = None
-        table = None
-        use_casacore = False
-        CASA_AVAILABLE = False
+    # CASA not available - class will fail at instantiation if use_ms=True
+    table = None
+    CASA_AVAILABLE = False
 
 
 class RFIMaskDataset(Dataset):
@@ -73,13 +63,11 @@ class RFIMaskDataset(Dataset):
             if not CASA_AVAILABLE:
                 raise ImportError(
                     "CASA is required for use_ms=True but is not installed.\n"
-                    "Install with: pip install python-casacore  OR  pip install casatools"
+                    "Install with: pip install rfi-toolbox[casa]"
                 )
-            if use_casacore:
-                self.tb = ct.table(ms_name, readonly=True)
-            else:
-                tb = table()
-                self.tb = tb.open(ms_name, readonly=True)
+            tb = table()
+            tb.open(ms_name)
+            self.tb = tb
             self.num_antennas = self.tb.getcol("ANTENNA1").max() + 1
             self.spw_array = np.unique(self.tb.getcol("DATA_DESC_ID"))
 
