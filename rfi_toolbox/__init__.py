@@ -32,6 +32,7 @@ from . import datasets, preprocessing
 def __getattr__(name):
     """Lazy import for optional modules."""
     import importlib
+    print(f"[DEBUG __getattr__] Lazy loading: {name}")
 
     # List of valid lazy-loaded modules
     valid_modules = {
@@ -40,8 +41,10 @@ def __getattr__(name):
     }
 
     if name in valid_modules:
+        print(f"[DEBUG __getattr__] Calling importlib.import_module for: {name}")
         # Use importlib to avoid triggering __getattr__ recursion
         mod = importlib.import_module(f".{name}", __name__)
+        print(f"[DEBUG __getattr__] Successfully imported: {name}")
         # Cache in globals to avoid repeated imports
         globals()[name] = mod
         return mod

@@ -4,12 +4,19 @@ MS Loader - Load CASA measurement sets for RFI analysis
 Clean rewrite of RadioRFI functionality, focused on data loading only.
 """
 
+print("[DEBUG ms_loader] Starting ms_loader module import")
+
 import numpy as np
 from tqdm import tqdm
 
+print("[DEBUG ms_loader] numpy and tqdm imported")
+
+print("[DEBUG ms_loader] Attempting casatools import")
 try:
     from casatools import table
+    print("[DEBUG ms_loader] casatools.table imported successfully")
 except Exception as e:
+    print(f"[DEBUG ms_loader] casatools import failed: {e}")
     raise ImportError(
         "MSLoader requires CASA to be properly installed and configured.\n"
         "Install with: pip install rfi-toolbox[casa]\n"
@@ -17,26 +24,34 @@ except Exception as e:
         f"Original error: {e}"
     ) from e
 
+print("[DEBUG ms_loader] About to define MSLoader class")
+
 
 class MSLoader:
     """
     Load complex visibilities from CASA measurement sets.
 
     Simplified interface:
-    >>> loader = MSLoader('observation.ms')
+    >>> loader = MSLoader('observation.ms', field_id=0)
     >>> loader.load(num_antennas=5, mode='DATA')
     >>> data = loader.data  # Shape: (baselines, pols, channels, times)
     >>> flags = loader.load_flags()  # Load existing flags
+
+    Field handling:
+    >>> fields = loader.get_available_fields()  # Get list of all field IDs
+    >>> loader.load(field_id=1)  # Load specific field
     """
 
-    def __init__(self, ms_path):
+    def __init__(self, ms_path, field_id=None):
         """
         Initialize MS loader.
 
         Args:
             ms_path: Path to measurement set
+            field_id: Optional FIELD_ID to load. If None, loads all fields.
         """
         self.ms_path = str(ms_path)
+        self.field_id = field_id
 
         # Open MS and read metadata
         tb = table()
@@ -57,7 +72,8 @@ class MSLoader:
         self.tb.open(self.ms_path, nomodify=False)
 
         # Get number of time samples
-        subtable = self.tb.query("DATA_DESC_ID==0 && ANTENNA1==0 && ANTENNA2==1")
+        field_filter = f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
+        subtable = self.tb.query(f"DATA_DESC_ID==0 && ANTENNA1==0 && ANTENNA2==1{field_filter}")
         self.num_times = len(subtable.getcol("TIME"))
         subtable.close()
 
@@ -67,19 +83,24 @@ class MSLoader:
         self.antenna_baseline_map = None
         self.spw_list = None
 
-    def load(self, num_antennas=None, mode="DATA"):
+    def load(self, num_antennas=None, mode="DATA", field_id=None):
         """
         Load complex visibilities from MS.
 
         Args:
             num_antennas: Number of antennas to load (default: all)
             mode: Column to load ('DATA', 'CORRECTED_DATA', etc.)
+            field_id: Optional FIELD_ID to load. If provided, overrides field_id from __init__.
 
         Returns:
             Loaded data shape: (num_baselines, num_pols, num_channels, num_times)
         """
         if num_antennas is None:
             num_antennas = self.num_antennas
+
+        # Allow field_id parameter to override instance field_id
+        if field_id is not None:
+            self.field_id = field_id
 
         # Filter to SPWs with same number of channels
         same_spw_list = []
@@ -102,6 +123,11 @@ class MSLoader:
         print(f"  Antennas: {num_antennas}/{self.num_antennas}")
         print(f"  SPWs: {num_spw} ({num_channels} channels each = {total_channels} total)")
         print(f"  Times: {self.num_times}")
+        if self.field_id is not None:
+            print(f"  Field ID: {self.field_id}")
+
+        # Build field filter string for queries
+        field_filter = f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
 
         for i in tqdm(range(num_antennas), desc="Antenna 1"):
             for j in range(i + 1, self.num_antennas):
@@ -114,7 +140,7 @@ class MSLoader:
                 # Load all SPWs for this baseline
                 for spw_idx, spw in enumerate(same_spw_list):
                     subtable = self.tb.query(
-                        f"DATA_DESC_ID=={spw} && ANTENNA1=={i} && ANTENNA2=={j}"
+                        f"DATA_DESC_ID=={spw} && ANTENNA1=={i} && ANTENNA2=={j}{field_filter}"
                     )
 
                     # Skip if no data for this baseline/SPW
@@ -149,7 +175,7 @@ class MSLoader:
 
         return self.data
 
-    def load_single_baseline(self, ant1=0, ant2=1, pol_idx=0, mode="DATA"):
+    def load_single_baseline(self, ant1=0, ant2=1, pol_idx=0, mode="DATA", field_id=None):
         """
         Load single baseline, single polarization.
 
@@ -158,10 +184,14 @@ class MSLoader:
             ant2: Second antenna
             pol_idx: Polarization index (0=XX, 1=XY, 2=YX, 3=YY)
             mode: Column to load ('DATA', 'CORRECTED_DATA', etc.)
+            field_id: Optional FIELD_ID to load. If provided, overrides field_id from __init__.
 
         Returns:
             Complex array shape: (total_channels, num_times)
         """
+        # Allow field_id parameter to override instance field_id
+        if field_id is not None:
+            self.field_id = field_id
         # Filter to SPWs with same number of channels
         same_spw_list = []
         same_channels_list = []
@@ -179,13 +209,18 @@ class MSLoader:
         print(f"  Baseline: {ant1}-{ant2}, Pol: {pol_idx}")
         print(f"  SPWs: {num_spw} ({num_channels} channels each = {total_channels} total)")
         print(f"  Times: {self.num_times}")
+        if self.field_id is not None:
+            print(f"  Field ID: {self.field_id}")
+
+        # Build field filter string for queries
+        field_filter = f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
 
         # Allocate array for this baseline
         baseline_data = np.zeros([total_channels, self.num_times], dtype="complex128")
 
         # Load all SPWs for this baseline
         for spw_idx, spw in enumerate(same_spw_list):
-            subtable = self.tb.query(f"DATA_DESC_ID=={spw} && ANTENNA1=={ant1} && ANTENNA2=={ant2}")
+            subtable = self.tb.query(f"DATA_DESC_ID=={spw} && ANTENNA1=={ant1} && ANTENNA2=={ant2}{field_filter}")
 
             if subtable.nrows() == 0:
                 subtable.close()
@@ -217,6 +252,11 @@ class MSLoader:
             raise ValueError("Must call load() first to establish baseline map")
 
         print("\nLoading flags from MS...")
+        if self.field_id is not None:
+            print(f"  Field ID: {self.field_id}")
+
+        # Build field filter string for queries
+        field_filter = f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
 
         flags_list = []
         num_channels = self.channels_per_spw_list[0]
@@ -228,7 +268,7 @@ class MSLoader:
 
             for spw_idx, spw in enumerate(self.spw_list):
                 subtable = self.tb.query(
-                    f"DATA_DESC_ID=={spw} && ANTENNA1=={ant1} && ANTENNA2=={ant2}"
+                    f"DATA_DESC_ID=={spw} && ANTENNA1=={ant1} && ANTENNA2=={ant2}{field_filter}"
                 )
 
                 spw_flags = subtable.getcol("FLAG")
@@ -257,6 +297,11 @@ class MSLoader:
             raise ValueError("Must call load() first to establish baseline map")
 
         print("\nSaving flags to MS...")
+        if self.field_id is not None:
+            print(f"  Field ID: {self.field_id}")
+
+        # Build field filter string for queries
+        field_filter = f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
 
         num_channels = self.channels_per_spw_list[0]
 
@@ -273,12 +318,22 @@ class MSLoader:
 
                 # Write to MS
                 subtable = self.tb.query(
-                    f"DATA_DESC_ID=={spw} && ANTENNA1=={ant1} && ANTENNA2=={ant2}"
+                    f"DATA_DESC_ID=={spw} && ANTENNA1=={ant1} && ANTENNA2=={ant2}{field_filter}"
                 )
                 subtable.putcol("FLAG", spw_flags)
                 subtable.close()
 
         print("  Flags saved successfully")
+
+    def get_available_fields(self):
+        """
+        Get list of unique FIELD_IDs present in this measurement set.
+
+        Returns:
+            list: Sorted list of field IDs
+        """
+        field_ids = np.unique(self.tb.getcol("FIELD_ID"))
+        return sorted(field_ids.tolist())
 
     def close(self):
         """Close the measurement set."""
@@ -295,3 +350,5 @@ class MSLoader:
         if self.data is None:
             raise ValueError("Must call load() first")
         return np.abs(self.data)
+
+print("[DEBUG ms_loader] MSLoader class definition complete")
