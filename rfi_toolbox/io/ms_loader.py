@@ -84,6 +84,60 @@ class MSLoader:
         self.antenna_baseline_map = None
         self.spw_list = None
 
+    def get_metadata(self, num_antennas=None, mode="DATA"):
+        """
+        Get MS metadata without loading data (fast).
+
+        Args:
+            num_antennas: Number of antennas (default: all)
+            mode: Column to get metadata for
+
+        Returns:
+            dict with keys: num_baselines, num_pols, num_channels, num_times, baseline_map
+        """
+        if num_antennas is None:
+            num_antennas = self.num_antennas
+
+        # Get shape from dminfo (no data loading)
+        dminfo = self.tb.getdminfo()
+
+        # Find the storage manager for the DATA column
+        data_sm = None
+        for key, info in dminfo.items():
+            if mode in info.get('COLUMNS', []):
+                data_sm = info
+                break
+
+        if data_sm is None:
+            raise ValueError(f"Column {mode} not found in MS")
+
+        # Extract shape from first hypercube
+        hypercubes = data_sm['SPEC']['HYPERCUBES']
+        if hypercubes:
+            first_cube = list(hypercubes.values())[0]
+            cell_shape = first_cube['CellShape']
+            num_pols, num_channels = cell_shape[0], cell_shape[1]
+        else:
+            raise ValueError(f"No hypercube info for {mode}")
+
+        # Build baseline map
+        baseline_map = []
+        for i in range(num_antennas):
+            for j in range(i + 1, num_antennas):
+                baseline_map.append((i, j))
+
+        num_baselines = len(baseline_map)
+        num_times = self.num_times
+
+        return {
+            'num_baselines': num_baselines,
+            'num_pols': num_pols,
+            'num_channels': num_channels,
+            'num_times': num_times,
+            'baseline_map': baseline_map,
+            'shape': (num_baselines, num_pols, num_channels, num_times)
+        }
+
     def load(self, num_antennas=None, mode="DATA", field_id=None):
         """
         Load complex visibilities from MS.
