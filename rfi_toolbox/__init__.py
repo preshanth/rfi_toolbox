@@ -31,31 +31,19 @@ from . import datasets, preprocessing
 # Lazy imports for other modules to avoid circular dependencies
 def __getattr__(name):
     """Lazy import for optional modules."""
-    if name == "utils":
-        from . import utils
-        return utils
-    elif name == "evaluation":
-        from . import evaluation
-        return evaluation
-    elif name == "config":
-        from . import config
-        return config
-    elif name == "data_generation":
-        from . import data_generation
-        return data_generation
-    elif name == "io":
-        from . import io
-        return io
-    elif name == "models":
-        from . import models
-        return models
-    elif name == "visualization":
-        from . import visualization
-        return visualization
-    elif name == "core":
-        from . import core
-        return core
-    elif name == "scripts":
-        from . import scripts
-        return scripts
+    import importlib
+
+    # List of valid lazy-loaded modules
+    valid_modules = {
+        "utils", "evaluation", "config", "data_generation", "io",
+        "models", "visualization", "core", "scripts"
+    }
+
+    if name in valid_modules:
+        # Use importlib to avoid triggering __getattr__ recursion
+        mod = importlib.import_module(f".{name}", __name__)
+        # Cache in globals to avoid repeated imports
+        globals()[name] = mod
+        return mod
+
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
