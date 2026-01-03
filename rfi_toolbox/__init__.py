@@ -26,7 +26,8 @@ __author__ = "Preshanth Jagannathan"
 __email__ = "pjaganna@nrao.edu"
 
 # Eager imports (required for multiprocessing pickle compatibility)
-from . import datasets, preprocessing
+import datasets as datasets
+import preprocessing as preprocessing
 
 # Lazy imports for other modules to avoid circular dependencies
 def __getattr__(name):

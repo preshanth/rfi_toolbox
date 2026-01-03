@@ -9,6 +9,7 @@ print("[DEBUG io/__init__] Starting io module import")
 print("[DEBUG io/__init__] Attempting to import MSLoader")
 try:
     from .ms_loader import MSLoader
+
     print("[DEBUG io/__init__] MSLoader imported successfully")
     _HAS_CASA = True
 except ImportError as e:
@@ -19,6 +20,7 @@ except ImportError as e:
 print("[DEBUG io/__init__] Attempting to import inject_synthetic_data")
 try:
     from .ms_injection import inject_synthetic_data
+
     print("[DEBUG io/__init__] inject_synthetic_data imported successfully")
 except ImportError as e:
     print(f"[DEBUG io/__init__] inject_synthetic_data import failed: {e}")

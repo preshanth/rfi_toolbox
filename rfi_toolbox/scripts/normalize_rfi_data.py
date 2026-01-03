@@ -2,7 +2,6 @@
 import argparse
 import os
 import numpy as np
-from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler, RobustScaler
 import shutil
 
