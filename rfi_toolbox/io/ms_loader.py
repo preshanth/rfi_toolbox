@@ -4,17 +4,14 @@ MS Loader - Load CASA measurement sets for RFI analysis
 Clean rewrite of RadioRFI functionality, focused on data loading only.
 """
 
-print("[DEBUG ms_loader] Starting ms_loader module import")
-
 import numpy as np
 from tqdm import tqdm
 import gc
 
-print("[DEBUG ms_loader] numpy and tqdm imported")
-
 print("[DEBUG ms_loader] Attempting casatools import")
 try:
     from casatools import table
+
     print("[DEBUG ms_loader] casatools.table imported successfully")
 except Exception as e:
     print(f"[DEBUG ms_loader] casatools import failed: {e}")
@@ -73,8 +70,12 @@ class MSLoader:
         self.tb.open(self.ms_path, nomodify=False)
 
         # Get number of time samples
-        field_filter = f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
-        subtable = self.tb.query(f"DATA_DESC_ID==0 && ANTENNA1==0 && ANTENNA2==1{field_filter}")
+        field_filter = (
+            f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
+        )
+        subtable = self.tb.query(
+            f"DATA_DESC_ID==0 && ANTENNA1==0 && ANTENNA2==1{field_filter}"
+        )
         self.num_times = len(subtable.getcol("TIME"))
         subtable.close()
 
@@ -104,7 +105,7 @@ class MSLoader:
         # Find the storage manager for the DATA column
         data_sm = None
         for key, info in dminfo.items():
-            if mode in info.get('COLUMNS', []):
+            if mode in info.get("COLUMNS", []):
                 data_sm = info
                 break
 
@@ -112,10 +113,10 @@ class MSLoader:
             raise ValueError(f"Column {mode} not found in MS")
 
         # Extract shape from first hypercube
-        hypercubes = data_sm['SPEC']['HYPERCUBES']
+        hypercubes = data_sm["SPEC"]["HYPERCUBES"]
         if hypercubes:
             first_cube = list(hypercubes.values())[0]
-            cell_shape = first_cube['CellShape']
+            cell_shape = first_cube["CellShape"]
             num_pols, num_channels = cell_shape[0], cell_shape[1]
         else:
             raise ValueError(f"No hypercube info for {mode}")
@@ -130,12 +131,12 @@ class MSLoader:
         num_times = self.num_times
 
         return {
-            'num_baselines': num_baselines,
-            'num_pols': num_pols,
-            'num_channels': num_channels,
-            'num_times': num_times,
-            'baseline_map': baseline_map,
-            'shape': (num_baselines, num_pols, num_channels, num_times)
+            "num_baselines": num_baselines,
+            "num_pols": num_pols,
+            "num_channels": num_channels,
+            "num_times": num_times,
+            "baseline_map": baseline_map,
+            "shape": (num_baselines, num_pols, num_channels, num_times),
         }
 
     def load(self, num_antennas=None, mode="DATA", field_id=None):
@@ -176,18 +177,24 @@ class MSLoader:
 
         print(f"\nLoading {mode} from {self.ms_path}...")
         print(f"  Antennas: {num_antennas}/{self.num_antennas}")
-        print(f"  SPWs: {num_spw} ({num_channels} channels each = {total_channels} total)")
+        print(
+            f"  SPWs: {num_spw} ({num_channels} channels each = {total_channels} total)"
+        )
         print(f"  Times: {self.num_times}")
         if self.field_id is not None:
             print(f"  Field ID: {self.field_id}")
 
         # Build field filter string for queries
-        field_filter = f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
+        field_filter = (
+            f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
+        )
 
         for i in tqdm(range(num_antennas), desc="Antenna 1"):
             for j in range(i + 1, self.num_antennas):
                 # Allocate array for this baseline
-                baseline_data = np.zeros([4, total_channels, self.num_times], dtype="complex128")
+                baseline_data = np.zeros(
+                    [4, total_channels, self.num_times], dtype="complex128"
+                )
 
                 # Check if this baseline has any data
                 has_data = False
@@ -230,7 +237,9 @@ class MSLoader:
 
         return self.data
 
-    def load_single_baseline(self, ant1=0, ant2=1, pol_idx=0, mode="DATA", field_id=None):
+    def load_single_baseline(
+        self, ant1=0, ant2=1, pol_idx=0, mode="DATA", field_id=None
+    ):
         """
         Load single baseline, single polarization.
 
@@ -262,20 +271,26 @@ class MSLoader:
 
         print(f"\nLoading single baseline from {self.ms_path}...")
         print(f"  Baseline: {ant1}-{ant2}, Pol: {pol_idx}")
-        print(f"  SPWs: {num_spw} ({num_channels} channels each = {total_channels} total)")
+        print(
+            f"  SPWs: {num_spw} ({num_channels} channels each = {total_channels} total)"
+        )
         print(f"  Times: {self.num_times}")
         if self.field_id is not None:
             print(f"  Field ID: {self.field_id}")
 
         # Build field filter string for queries
-        field_filter = f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
+        field_filter = (
+            f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
+        )
 
         # Allocate array for this baseline
         baseline_data = np.zeros([total_channels, self.num_times], dtype="complex128")
 
         # Load all SPWs for this baseline
         for spw_idx, spw in enumerate(same_spw_list):
-            subtable = self.tb.query(f"DATA_DESC_ID=={spw} && ANTENNA1=={ant1} && ANTENNA2=={ant2}{field_filter}")
+            subtable = self.tb.query(
+                f"DATA_DESC_ID=={spw} && ANTENNA1=={ant1} && ANTENNA2=={ant2}{field_filter}"
+            )
 
             if subtable.nrows() == 0:
                 subtable.close()
@@ -296,6 +311,129 @@ class MSLoader:
 
         return baseline_data
 
+    def load_baseline(self, ant1, ant2, mode="DATA", field_id=None):
+        """
+        Load one baseline, all pols. Opens/closes table per call.
+
+        Args:
+            ant1, ant2: Antenna pair
+            mode: Column ('DATA', 'CORRECTED_DATA', etc.)
+            field_id: Optional FIELD_ID
+
+        Returns:
+            Complex array (pols, channels, times)
+        """
+        tb = table()
+        tb.open(self.ms_path, nomodify=False)
+
+        # Get SPW info
+        tb_spw = table()
+        tb_spw.open(self.ms_path + "/SPECTRAL_WINDOW")
+        channels_per_spw = tb_spw.getcol("NUM_CHAN")
+        tb_spw.close()
+
+        # Use SPWs with same channel count
+        same_spw_list = []
+        for spw, num_chan in enumerate(channels_per_spw):
+            if num_chan == channels_per_spw[0]:
+                same_spw_list.append(spw)
+
+        num_channels = channels_per_spw[0]
+        total_channels = len(same_spw_list) * num_channels
+
+        # Get num times (query first SPW to get shape)
+        field_filter = f" && FIELD_ID=={field_id}" if field_id is not None else ""
+        test_sub = tb.query(
+            f"DATA_DESC_ID=={same_spw_list[0]} && ANTENNA1=={ant1} && ANTENNA2=={ant2}{field_filter}"
+        )
+        num_times = test_sub.nrows()
+        test_sub.close()
+
+        # Allocate
+        baseline_data = np.zeros([4, total_channels, num_times], dtype="complex128")
+
+        # Load each SPW
+        for spw_idx, spw in enumerate(same_spw_list):
+            subtable = tb.query(
+                f"DATA_DESC_ID=={spw} && ANTENNA1=={ant1} && ANTENNA2=={ant2}{field_filter}"
+            )
+
+            if subtable.nrows() == 0:
+                subtable.close()
+                continue
+
+            spw_data = subtable.getcol(mode)  # (pols, channels, times)
+
+            start_ch = spw_idx * num_channels
+            end_ch = (spw_idx + 1) * num_channels
+            baseline_data[:, start_ch:end_ch, :] = spw_data
+
+            subtable.close()
+
+        tb.close()
+        return baseline_data
+
+    def save_baseline_flags(self, ant1, ant2, flags, field_id=None):
+        """
+        Write flags for one baseline. Opens/closes table per call.
+
+        Args:
+            ant1, ant2: Antenna pair
+            flags: Boolean array (pols, channels, times)
+            field_id: Optional FIELD_ID
+        """
+        tb = table()
+        tb.open(self.ms_path, nomodify=False)
+
+        # Get SPW info
+        tb_spw = table()
+        tb_spw.open(self.ms_path + "/SPECTRAL_WINDOW")
+        channels_per_spw = tb_spw.getcol("NUM_CHAN")
+        tb_spw.close()
+
+        # Use SPWs with same channel count
+        same_spw_list = []
+        for spw, num_chan in enumerate(channels_per_spw):
+            if num_chan == channels_per_spw[0]:
+                same_spw_list.append(spw)
+
+        num_channels = channels_per_spw[0]
+
+        field_filter = f" && FIELD_ID=={field_id}" if field_id is not None else ""
+
+        # Write each SPW
+        for spw_idx, spw in enumerate(same_spw_list):
+            start_ch = spw_idx * num_channels
+            end_ch = (spw_idx + 1) * num_channels
+            spw_flags = flags[:, start_ch:end_ch, :]
+
+            subtable = tb.query(
+                f"DATA_DESC_ID=={spw} && ANTENNA1=={ant1} && ANTENNA2=={ant2}{field_filter}"
+            )
+
+            if subtable.nrows() > 0:
+                subtable.putcol("FLAG", spw_flags)
+
+            subtable.close()
+
+        tb.close()
+
+    def get_baseline_pairs(self, num_antennas=None):
+        """
+        Get list of baseline pairs.
+
+        Returns:
+            List of (ant1, ant2) tuples
+        """
+        if num_antennas is None:
+            num_antennas = self.num_antennas
+
+        pairs = []
+        for i in range(num_antennas):
+            for j in range(i + 1, num_antennas):
+                pairs.append((i, j))
+        return pairs
+
     def load_flags(self):
         """
         Load existing flags from MS.
@@ -311,7 +449,9 @@ class MSLoader:
             print(f"  Field ID: {self.field_id}")
 
         # Build field filter string for queries
-        field_filter = f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
+        field_filter = (
+            f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
+        )
 
         flags_list = []
         num_channels = self.channels_per_spw_list[0]
@@ -356,7 +496,9 @@ class MSLoader:
             print(f"  Field ID: {self.field_id}")
 
         # Build field filter string for queries
-        field_filter = f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
+        field_filter = (
+            f" && FIELD_ID=={self.field_id}" if self.field_id is not None else ""
+        )
 
         num_channels = self.channels_per_spw_list[0]
 
@@ -398,7 +540,7 @@ class MSLoader:
             del self.data
         if hasattr(self, "flags"):
             del self.flags
-        gc.collect()    
+        gc.collect()
 
     def __del__(self):
         """Ensure MS is closed on deletion."""
@@ -410,5 +552,6 @@ class MSLoader:
         if self.data is None:
             raise ValueError("Must call load() first")
         return np.abs(self.data)
+
 
 print("[DEBUG ms_loader] MSLoader class definition complete")

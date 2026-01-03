@@ -1,12 +1,11 @@
 # rfi_toolbox/visualization/visualize.py
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
 from rfi_toolbox.datasets import RFIMaskDataset
 from rfi_toolbox.models.unet import UNet
 from bokeh.plotting import figure, show
 from bokeh.layouts import column, row
-from bokeh.models import Slider, ColumnDataSource, Button
+from bokeh.models import Slider, ColumnDataSource
 from bokeh.palettes import Viridis256, Gray256
 import random
 import argparse

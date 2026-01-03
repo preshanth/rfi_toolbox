@@ -5,8 +5,6 @@ This module allows injecting synthetic RFI data into existing measurement sets
 for benchmarking RFI detection methods against traditional CASA flagging methods.
 """
 
-print("[DEBUG ms_injection] Starting ms_injection module import")
-
 import shutil
 from pathlib import Path
 
@@ -18,6 +16,7 @@ print("[DEBUG ms_injection] Basic imports complete")
 print("[DEBUG ms_injection] Attempting casatools import")
 try:
     from casatools import table
+
     print("[DEBUG ms_injection] casatools.table imported successfully")
     CASA_AVAILABLE = True
 except ImportError as e:
@@ -52,14 +51,17 @@ def inject_synthetic_data(
     """
     if not CASA_AVAILABLE:
         raise ImportError(
-            "casatools is required for MS injection. " "Install with: pip install rfi-toolbox[casa]"
+            "casatools is required for MS injection. "
+            "Install with: pip install rfi-toolbox[casa]"
         )
 
     template_ms_path = Path(template_ms_path)
 
     # Default output path
     if output_ms_path is None:
-        output_ms_path = template_ms_path.parent / f"{template_ms_path.stem}.synthetic.ms"
+        output_ms_path = (
+            template_ms_path.parent / f"{template_ms_path.stem}.synthetic.ms"
+        )
     else:
         output_ms_path = Path(output_ms_path)
 
@@ -112,7 +114,10 @@ def inject_synthetic_data(
     # For simplicity, assume all SPWs have same channel count
     # and we're filling all SPWs with the same data
     if len(set(channels_per_spw)) > 1:
-        print("  WARNING: MS has SPWs with different channel counts. " "Using first SPW only.")
+        print(
+            "  WARNING: MS has SPWs with different channel counts. "
+            "Using first SPW only."
+        )
 
     channels_in_spw = channels_per_spw[0]
 
@@ -138,7 +143,9 @@ def inject_synthetic_data(
 
         for spw_idx in range(num_spw):
             # Query this baseline + SPW
-            subtable = tb.query(f"DATA_DESC_ID=={spw_idx} && ANTENNA1=={ant1} && ANTENNA2=={ant2}")
+            subtable = tb.query(
+                f"DATA_DESC_ID=={spw_idx} && ANTENNA1=={ant1} && ANTENNA2=={ant2}"
+            )
 
             if subtable.nrows() == 0:
                 print(f"  WARNING: No rows for baseline ({ant1},{ant2}), SPW {spw_idx}")
@@ -259,7 +266,9 @@ def inject_synthetic_data(
                         subtable.putcell("DATA", row_idx, cell_val)
                     except Exception as e:
                         subtable.close()
-                        raise RuntimeError(f"Failed to write DATA row {row_idx}: {e}") from e
+                        raise RuntimeError(
+                            f"Failed to write DATA row {row_idx}: {e}"
+                        ) from e
 
             subtable.close()
 

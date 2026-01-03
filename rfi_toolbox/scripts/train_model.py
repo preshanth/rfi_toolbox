@@ -194,5 +194,4 @@ def main():
     print(f"Final model saved to {final_model_path}")
 
 if __name__ == "__main__":
-    from datetime import datetime
     main()
