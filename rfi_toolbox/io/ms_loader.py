@@ -130,12 +130,19 @@ class MSLoader:
         num_baselines = len(baseline_map)
         num_times = self.num_times
 
+        # Get SPW information
+        num_spws = len(self.channels_per_spw)
+        total_channels = sum(self.channels_per_spw)
+
         return {
             "num_baselines": num_baselines,
             "num_pols": num_pols,
-            "num_channels": num_channels,
+            "num_channels": num_channels,  # channels per SPW
             "num_times": num_times,
             "baseline_map": baseline_map,
+            "num_spws": num_spws,
+            "total_channels": total_channels,  # all SPWs combined
+            "channels_per_spw": self.channels_per_spw.tolist(),
             "shape": (num_baselines, num_pols, num_channels, num_times),
         }
 
